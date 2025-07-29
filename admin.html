@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词管理页面</title>
+    <link rel="stylesheet" href="admin.css">
+    <!-- 引入xlsx库用于Excel导入 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>单词管理系统</h1>
+            <nav>
+                <a href="index.html" class="nav-link">返回游戏</a>
+            </nav>
+        </header>
+        
+        <div class="main-content">
+            <div class="word-form">
+                <h2>添加新单词</h2>
+                <form id="add-word-form">
+                    <div class="form-group">
+                        <label for="word">单词:</label>
+                        <input type="text" id="word" name="word" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="translation">翻译:</label>
+                        <input type="text" id="translation" name="translation" required>
+                    </div>
+                    <button type="submit" class="btn">添加单词</button>
+                </form>
+            </div>
+            
+            <div class="import-section">
+                <h2>批量导入单词</h2>
+                <div class="import-controls">
+                    <input type="file" id="excel-file" accept=".xlsx, .xls, .csv">
+                    <button id="import-btn" class="btn">导入Excel</button>
+                </div>
+                <div class="template-info">
+                    <p>Excel模板格式: 第一列为单词，第二列为翻译</p>
+                    <a href="#" id="download-template" class="btn btn-small">下载模板</a>
+                </div>
+            </div>
+            
+            <div class="word-list-section">
+                <h2>单词列表</h2>
+                <div class="list-controls">
+                    <input type="text" id="search-input" placeholder="搜索单词...">
+                    <button id="export-btn" class="btn">导出Excel</button>
+                </div>
+                <div class="word-list-container">
+                    <table id="word-list">
+                        <thead>
+                            <tr>
+                                <th>单词</th>
+                                <th>翻译</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 单词列表将通过JavaScript动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 编辑单词的模态框 -->
+        <div id="edit-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close-btn">&times;</span>
+                <h2>编辑单词</h2>
+                <form id="edit-word-form">
+                    <input type="hidden" id="edit-index">
+                    <div class="form-group">
+                        <label for="edit-word">单词:</label>
+                        <input type="text" id="edit-word" name="edit-word" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-translation">翻译:</label>
+                        <input type="text" id="edit-translation" name="edit-translation" required>
+                    </div>
+                    <button type="submit" class="btn">保存修改</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="admin.js"></script>
+</body>
+</html>

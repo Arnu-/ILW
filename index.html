@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词打字记忆游戏</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>单词打字记忆游戏</h1>
+            <div class="stats">
+                <div class="score">得分: <span id="score">0</span></div>
+                <div class="remaining">剩余卡片: <span id="remaining">0</span></div>
+                <div class="user-info">用户: <span id="current-user">未登录</span></div>
+                <div class="admin-link"><a href="admin.html">单词管理</a></div>
+            </div>
+        </header>
+        
+        <!-- 用户登录界面 -->
+        <div id="login-container" class="login-container">
+            <h2>请输入您的用户名</h2>
+            <div class="login-form">
+                <input type="text" id="username-input" placeholder="输入用户名..." autocomplete="off">
+                <button id="login-btn">进入游戏</button>
+            </div>
+        </div>
+        
+        <div id="game-container" class="game-container hidden">
+            <div class="game-area">
+                <div class="input-area">
+                    <input type="text" id="word-input" placeholder="在此输入单词..." autocomplete="off">
+                    <button id="start-btn">开始游戏</button>
+                </div>
+                <div id="cards-container" class="cards-container"></div>
+            </div>
+            
+            <div class="message" id="message"></div>
+            
+            <div class="level-complete hidden" id="level-complete">
+                <h2>恭喜通关！</h2>
+                <p>你的得分: <span id="final-score">0</span></p>
+                <button id="next-level-btn">下一关</button>
+                <button id="view-leaderboard-btn">查看排行榜</button>
+            </div>
+        </div>
+        
+        <!-- 排行榜 -->
+        <div id="leaderboard" class="leaderboard hidden">
+            <h2>排行榜</h2>
+            <table id="leaderboard-table">
+                <thead>
+                    <tr>
+                        <th>排名</th>
+                        <th>用户名</th>
+                        <th>分数</th>
+                        <th>关卡</th>
+                        <th>日期</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-body">
+                    <!-- 排行榜数据将通过JavaScript动态生成 -->
+                </tbody>
+            </table>
+            <button id="close-leaderboard-btn">返回游戏</button>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
