@@ -44,7 +44,8 @@ const config = {
     cardSpeed: 3000, // 卡片浮动动画速度（毫秒）
     currentLevel: 1,
     maxLevels: 4,
-    gameMode: 'english' // 默认模式：显示英文，输入英文 ('english' 或 'chinese')
+    gameMode: 'english', // 默认模式：显示英文，输入英文 ('english' 或 'chinese')
+    cardSpacing: 20 // 卡片之间的最小间距
 };
 
 // 游戏状态
@@ -59,7 +60,8 @@ let gameState = {
     keyboardVisible: false,
     hintWord: null,
     currentHintIndex: 0,
-    userInput: ''
+    userInput: '',
+    overlapDetectionInterval: null
 };
 
 // DOM 元素
@@ -165,6 +167,9 @@ function initGame() {
     // 停止计时器
     stopTimer();
     
+    // 停止重叠检测
+    stopOverlapDetection();
+    
     // 更新UI
     scoreElement.textContent = gameState.score;
     timerElement.textContent = formatTime(gameState.timeSpent);
@@ -265,8 +270,16 @@ function startGame() {
     
     // 创建卡片
     levelWords.forEach((wordData, index) => {
-        createCard(wordData, index);
+        // 延迟创建卡片，避免同时创建导致的位置计算问题
+        setTimeout(() => {
+            createCard(wordData, index);
+        }, index * 100); // 每张卡片间隔100毫秒创建
     });
+    
+    // 所有卡片创建完成后，启动重叠检测
+    setTimeout(() => {
+        startOverlapDetection();
+    }, cardsCount * 100 + 500); // 等待所有卡片创建完成后再启动
 }
 
 // 创建卡片
@@ -304,8 +317,130 @@ function createCard(wordData, index) {
     // 将卡片添加到活动卡片列表
     gameState.activeCards.push({
         element: card,
-        word: wordData.word.toLowerCase()
+        word: wordData.word.toLowerCase(),
+        left: left,
+        top: top,
+        width: 150, // 卡片默认宽度
+        height: 100 // 卡片默认高度
     });
+    
+    // 检测并调整卡片位置，避免重叠
+    setTimeout(() => {
+        adjustCardPosition(gameState.activeCards.length - 1);
+    }, 10);
+}
+
+// 检测卡片重叠并调整位置
+function adjustCardPosition(cardIndex) {
+    const currentCard = gameState.activeCards[cardIndex];
+    if (!currentCard) return;
+    
+    const cardElement = currentCard.element;
+    
+    // 获取卡片实际尺寸
+    const rect = cardElement.getBoundingClientRect();
+    currentCard.width = rect.width;
+    currentCard.height = rect.height;
+    
+    let overlapping = false;
+    let attempts = 0;
+    const maxAttempts = 20; // 最大尝试次数
+    
+    do {
+        overlapping = false;
+        
+        // 检查与其他卡片的重叠
+        for (let i = 0; i < gameState.activeCards.length; i++) {
+            if (i === cardIndex) continue; // 跳过自身
+            
+            const otherCard = gameState.activeCards[i];
+            
+            // 检测重叠
+            if (isOverlapping(currentCard, otherCard)) {
+                overlapping = true;
+                
+                // 计算新位置
+                const newPosition = calculateNewPosition(currentCard, otherCard);
+                
+                // 应用新位置
+                currentCard.left = newPosition.left;
+                currentCard.top = newPosition.top;
+                
+                // 更新DOM元素位置
+                cardElement.style.left = `${currentCard.left}px`;
+                cardElement.style.top = `${currentCard.top}px`;
+                
+                // 添加平滑过渡效果
+                cardElement.style.transition = 'left 0.5s ease, top 0.5s ease';
+                
+                break; // 一次只处理一个重叠
+            }
+        }
+        
+        attempts++;
+    } while (overlapping && attempts < maxAttempts);
+    
+    // 移除过渡效果，避免影响浮动动画
+    setTimeout(() => {
+        cardElement.style.transition = '';
+    }, 500);
+}
+
+// 检测两个卡片是否重叠
+function isOverlapping(card1, card2) {
+    // 扩大一点检测范围，留出间距
+    const padding = 10;
+    
+    return !(
+        card1.left + card1.width + padding < card2.left || // card1在card2左侧
+        card1.left > card2.left + card2.width + padding || // card1在card2右侧
+        card1.top + card1.height + padding < card2.top || // card1在card2上方
+        card1.top > card2.top + card2.height + padding    // card1在card2下方
+    );
+}
+
+// 计算新位置，避免重叠
+function calculateNewPosition(card, otherCard) {
+    // 计算当前卡片中心点
+    const cardCenterX = card.left + card.width / 2;
+    const cardCenterY = card.top + card.height / 2;
+    
+    // 计算其他卡片中心点
+    const otherCenterX = otherCard.left + otherCard.width / 2;
+    const otherCenterY = otherCard.top + otherCard.height / 2;
+    
+    // 计算两个中心点之间的向量
+    const vectorX = cardCenterX - otherCenterX;
+    const vectorY = cardCenterY - otherCenterY;
+    
+    // 向量长度
+    const length = Math.sqrt(vectorX * vectorX + vectorY * vectorY);
+    
+    // 如果长度为0（完全重叠），随机选择一个方向
+    const normalizedX = length === 0 ? Math.random() - 0.5 : vectorX / length;
+    const normalizedY = length === 0 ? Math.random() - 0.5 : vectorY / length;
+    
+    // 计算需要移动的距离
+    const minDistance = (card.width + otherCard.width) / 2 + 20; // 额外间距
+    const moveDistance = length === 0 ? minDistance : minDistance - length;
+    
+    // 如果已经足够远，不需要移动
+    if (moveDistance <= 0) {
+        return { left: card.left, top: card.top };
+    }
+    
+    // 计算新位置
+    let newLeft = card.left + normalizedX * moveDistance;
+    let newTop = card.top + normalizedY * moveDistance;
+    
+    // 确保卡片不会移出容器
+    const containerWidth = cardsContainer.offsetWidth;
+    const containerHeight = cardsContainer.offsetHeight;
+    
+    newLeft = Math.max(0, Math.min(newLeft, containerWidth - card.width));
+    newTop = Math.max(0, Math.min(newTop, containerHeight - card.height));
+    
+    return { left: newLeft, top: newTop };
 }
 
 // 检查输入
@@ -393,6 +528,9 @@ function showMessage(text, type) {
 function levelComplete() {
     // 停止计时器
     stopTimer();
+    
+    // 停止重叠检测
+    stopOverlapDetection();
     
     // 显示通关界面
     levelCompleteElement.classList.remove('hidden');
@@ -900,6 +1038,43 @@ document.addEventListener('keydown', (e) => {
         handleKeyInput(e.key);
     }
 });
+
+// 定期检测卡片重叠
+function startOverlapDetection() {
+    if (gameState.overlapDetectionInterval) {
+        clearInterval(gameState.overlapDetectionInterval);
+    }
+    
+    // 每2秒检测一次所有卡片的重叠情况
+    gameState.overlapDetectionInterval = setInterval(() => {
+        if (!gameState.gameStarted || gameState.activeCards.length <= 1) return;
+        
+        // 更新所有卡片的位置信息
+        gameState.activeCards.forEach(card => {
+            const rect = card.element.getBoundingClientRect();
+            const containerRect = cardsContainer.getBoundingClientRect();
+            
+            // 转换为相对于容器的坐标
+            card.left = rect.left - containerRect.left;
+            card.top = rect.top - containerRect.top;
+            card.width = rect.width;
+            card.height = rect.height;
+        });
+        
+        // 检测并调整每张卡片
+        for (let i = 0; i < gameState.activeCards.length; i++) {
+            adjustCardPosition(i);
+        }
+    }, 2000);
+}
+
+// 停止重叠检测
+function stopOverlapDetection() {
+    if (gameState.overlapDetectionInterval) {
+        clearInterval(gameState.overlapDetectionInterval);
+        gameState.overlapDetectionInterval = null;
+    }
+}
 
 // 初始化
 document.addEventListener('DOMContentLoaded', async function() {
