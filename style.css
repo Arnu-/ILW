@@ -38,6 +38,24 @@ h1 {
 
 .user-info {
     color: #3498db;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.small-btn {
+    padding: 5px 10px;
+    font-size: 0.9rem;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.small-btn:hover {
+    background-color: #2980b9;
 }
 
 .admin-link a {

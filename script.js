@@ -61,6 +61,7 @@ const gameContainer = document.getElementById('game-container');
 const usernameInput = document.getElementById('username-input');
 const loginButton = document.getElementById('login-btn');
 const currentUserElement = document.getElementById('current-user');
+const switchUserButton = document.getElementById('switch-user-btn');
 const wordInput = document.getElementById('word-input');
 const cardsContainer = document.getElementById('cards-container');
 const scoreElement = document.getElementById('score');
@@ -397,6 +398,37 @@ async function showLeaderboard() {
     }
 }
 
+// 切换用户
+function switchUser() {
+    // 清除当前用户信息
+    currentUser = {
+        id: null,
+        username: null
+    };
+    
+    // 清除本地存储
+    localStorage.removeItem('currentUser');
+    
+    // 更新UI
+    currentUserElement.textContent = '未登录';
+    
+    // 显示登录界面
+    loginContainer.classList.remove('hidden');
+    gameContainer.classList.add('hidden');
+    modeSelectionContainer.classList.add('hidden');
+    leaderboardElement.classList.add('hidden');
+    
+    // 重置游戏状态
+    gameState.score = 0;
+    gameState.activeCards = [];
+    gameState.gameStarted = false;
+    scoreElement.textContent = gameState.score;
+    
+    // 清空输入框
+    usernameInput.value = '';
+    usernameInput.focus();
+}
+
 // 事件监听
 loginButton.addEventListener('click', loginUser);
 startButton.addEventListener('click', startGame);
@@ -406,6 +438,7 @@ closeLeaderboardButton.addEventListener('click', () => {
     leaderboardElement.classList.add('hidden');
     gameContainer.classList.remove('hidden');
 });
+switchUserButton.addEventListener('click', switchUser);
 
 // 游戏模式选择事件
 englishModeButton.addEventListener('click', () => {
