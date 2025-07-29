@@ -27,11 +27,21 @@
             </div>
         </div>
         
+        <!-- 游戏模式选择界面 -->
+        <div id="mode-selection" class="mode-selection hidden">
+            <h2>选择游戏模式</h2>
+            <div class="mode-buttons">
+                <button id="english-mode-btn" class="mode-btn">英文模式<br><small>显示英文，输入英文</small></button>
+                <button id="chinese-mode-btn" class="mode-btn">中文模式<br><small>显示中文，输入英文</small></button>
+            </div>
+        </div>
+        
         <div id="game-container" class="game-container hidden">
             <div class="game-area">
                 <div class="input-area">
                     <input type="text" id="word-input" placeholder="在此输入单词..." autocomplete="off">
                     <button id="start-btn">开始游戏</button>
+                    <button id="change-mode-btn">更换模式</button>
                 </div>
                 <div id="cards-container" class="cards-container"></div>
             </div>

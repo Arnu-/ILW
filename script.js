@@ -43,7 +43,8 @@ const config = {
     cardsPerLevel: 5,
     cardSpeed: 3000, // 卡片浮动动画速度（毫秒）
     currentLevel: 1,
-    maxLevels: 4
+    maxLevels: 4,
+    gameMode: 'english' // 默认模式：显示英文，输入英文 ('english' 或 'chinese')
 };
 
 // 游戏状态
@@ -74,18 +75,26 @@ const leaderboardElement = document.getElementById('leaderboard');
 const leaderboardBody = document.getElementById('leaderboard-body');
 const closeLeaderboardButton = document.getElementById('close-leaderboard-btn');
 
+// DOM 元素 - 游戏模式选择
+const modeSelectionContainer = document.getElementById('mode-selection');
+const englishModeButton = document.getElementById('english-mode-btn');
+const chineseModeButton = document.getElementById('chinese-mode-btn');
+const changeModeButton = document.getElementById('change-mode-btn');
+
 // 初始化游戏
 function initGame() {
     // 检查是否已登录
     if (!currentUser.id) {
         loginContainer.classList.remove('hidden');
         gameContainer.classList.add('hidden');
+        modeSelectionContainer.classList.add('hidden');
         return;
     }
     
-    // 显示游戏界面
+    // 显示游戏模式选择界面
     loginContainer.classList.add('hidden');
-    gameContainer.classList.remove('hidden');
+    gameContainer.classList.add('hidden');
+    modeSelectionContainer.classList.remove('hidden');
     
     // 重置游戏状态
     gameState.score = 0;
@@ -105,6 +114,19 @@ function initGame() {
     // 启用输入框和开始按钮
     wordInput.disabled = false;
     startButton.disabled = false;
+}
+
+// 选择游戏模式后显示游戏界面
+function showGameInterface() {
+    modeSelectionContainer.classList.add('hidden');
+    gameContainer.classList.remove('hidden');
+    
+    // 根据游戏模式更新输入框提示
+    if (config.gameMode === 'english') {
+        wordInput.placeholder = "在此输入英文单词...";
+    } else {
+        wordInput.placeholder = "看到中文，在此输入对应的英文...";
+    }
 }
 
 // 用户登录
@@ -142,7 +164,7 @@ async function loginUser() {
         // 更新UI
         currentUserElement.textContent = currentUser.username;
         
-        // 初始化游戏
+        // 初始化游戏 - 显示游戏模式选择界面
         initGame();
         
     } catch (error) {
@@ -178,10 +200,21 @@ function startGame() {
 function createCard(wordData, index) {
     const card = document.createElement('div');
     card.className = 'card';
-    card.innerHTML = `
-        <div class="word">${wordData.word}</div>
-        <div class="translation">${wordData.translation}</div>
-    `;
+    
+    // 根据游戏模式决定卡片显示内容
+    if (config.gameMode === 'english') {
+        // 英文模式：显示英文单词和中文翻译
+        card.innerHTML = `
+            <div class="word">${wordData.word}</div>
+            <div class="translation">${wordData.translation}</div>
+        `;
+    } else {
+        // 中文模式：显示中文翻译，隐藏英文单词
+        card.innerHTML = `
+            <div class="word">${wordData.translation}</div>
+            <div class="translation" style="display:none;">${wordData.word}</div>
+        `;
+    }
     
     // 随机位置
     const left = Math.random() * (cardsContainer.offsetWidth - 150);
@@ -216,7 +249,13 @@ function checkInput() {
         const matchedCard = gameState.activeCards[matchIndex];
         
         // 显示正确消息
-        showMessage(`正确！"${inputValue}" 已击毁`, 'correct');
+        if (config.gameMode === 'english') {
+            showMessage(`正确！"${inputValue}" 已击毁`, 'correct');
+        } else {
+            // 在中文模式下，显示中文和英文
+            const chineseText = matchedCard.element.querySelector('.word').textContent;
+            showMessage(`正确！"${chineseText}" 的英文 "${inputValue}" 已击毁`, 'correct');
+        }
         
         // 增加分数
         gameState.score += 10;
@@ -368,6 +407,30 @@ closeLeaderboardButton.addEventListener('click', () => {
     gameContainer.classList.remove('hidden');
 });
 
+// 游戏模式选择事件
+englishModeButton.addEventListener('click', () => {
+    config.gameMode = 'english';
+    showGameInterface();
+});
+
+chineseModeButton.addEventListener('click', () => {
+    config.gameMode = 'chinese';
+    showGameInterface();
+});
+
+// 更换游戏模式按钮
+changeModeButton.addEventListener('click', () => {
+    // 如果游戏已经开始，提示用户
+    if (gameState.gameStarted) {
+        showMessage('请先完成当前游戏或刷新页面以更换模式', 'incorrect');
+        return;
+    }
+    
+    // 返回模式选择界面
+    gameContainer.classList.add('hidden');
+    modeSelectionContainer.classList.remove('hidden');
+});
+
 usernameInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         loginUser();
@@ -391,11 +454,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         try {
             currentUser = JSON.parse(savedUser);
             currentUserElement.textContent = currentUser.username;
-            initGame();
+            initGame(); // 这将显示游戏模式选择界面
         } catch (e) {
             console.error('解析保存的用户信息失败:', e);
             localStorage.removeItem('currentUser');
-            initGame();
+            initGame(); // 这将显示登录界面
         }
     } else {
         // 没有保存的用户信息，显示登录界面
