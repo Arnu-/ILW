@@ -282,10 +282,41 @@ function startGame() {
     }, cardsCount * 100 + 500); // 等待所有卡片创建完成后再启动
 }
 
+// 获取单词难度级别
+function getWordDifficulty(word) {
+    const length = word.length;
+    
+    if (length < 5) {
+        return 1; // 一级难度：5个以下字母
+    } else if (length >= 5 && length < 8) {
+        return 2; // 二级难度：5-8个字母
+    } else if (length >= 8 && length < 15) {
+        return 3; // 三级难度：8-15个字母
+    } else {
+        return 4; // 四级难度：15个以上字母
+    }
+}
+
+// 根据难度获取单词得分
+function getScoreByDifficulty(difficulty) {
+    switch (difficulty) {
+        case 1: return 5;  // 一级难度得5分
+        case 2: return 10; // 二级难度得10分
+        case 3: return 15; // 三级难度得15分
+        case 4: return 20; // 四级难度得20分
+        default: return 10;
+    }
+}
+
 // 创建卡片
 function createCard(wordData, index) {
     const card = document.createElement('div');
-    card.className = 'card';
+    
+    // 计算单词难度
+    const difficulty = getWordDifficulty(wordData.word);
+    
+    // 设置卡片类名，包括难度级别
+    card.className = `card difficulty-${difficulty}`;
     
     // 根据游戏模式决定卡片显示内容
     if (config.gameMode === 'english') {
@@ -318,6 +349,7 @@ function createCard(wordData, index) {
     gameState.activeCards.push({
         element: card,
         word: wordData.word.toLowerCase(),
+        difficulty: difficulty, // 添加难度属性
         left: left,
         top: top,
         width: 150, // 卡片默认宽度
@@ -456,18 +488,21 @@ function checkInput() {
         // 找到匹配的卡片
         const matchedCard = gameState.activeCards[matchIndex];
         
-        // 显示正确消息
+        // 根据单词难度增加分数
+        const difficulty = matchedCard.difficulty;
+        const points = getScoreByDifficulty(difficulty);
+        gameState.score += points;
+        scoreElement.textContent = gameState.score;
+        
+        // 显示正确消息，包含难度和得分信息
+        const difficultyNames = ["", "初级", "中级", "高级", "专家"];
         if (config.gameMode === 'english') {
-            showMessage(`正确！"${inputValue}" 已击毁`, 'correct');
+            showMessage(`正确！"${inputValue}" (${difficultyNames[difficulty]}难度) +${points}分`, 'correct');
         } else {
             // 在中文模式下，显示中文和英文
             const chineseText = matchedCard.element.querySelector('.word').textContent;
-            showMessage(`正确！"${chineseText}" 的英文 "${inputValue}" 已击毁`, 'correct');
+            showMessage(`正确！"${chineseText}" 的英文 "${inputValue}" (${difficultyNames[difficulty]}难度) +${points}分`, 'correct');
         }
-        
-        // 增加分数
-        gameState.score += 10;
-        scoreElement.textContent = gameState.score;
         
         // 获取卡片位置和尺寸（在隐藏前）
         const cardElement = matchedCard.element;

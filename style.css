@@ -279,7 +279,6 @@ button:hover {
     position: absolute;
     width: 150px;
     height: 100px;
-    background-color: #3498db;
     color: white;
     border-radius: 8px;
     padding: 10px;
@@ -290,6 +289,25 @@ button:hover {
     text-align: center;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s, opacity 0.3s;
+}
+
+/* 单词难度级别样式 */
+.difficulty-1 {
+    background-color: #7bed9f; /* 浅绿色 */
+    color: #2c3e50;
+}
+
+.difficulty-2 {
+    background-color: #70a1ff; /* 蓝色 */
+}
+
+.difficulty-3 {
+    background-color: #a29bfe; /* 紫色 */
+}
+
+.difficulty-4 {
+    background-color: #ffd700; /* 金色 */
+    color: #2c3e50;
 }
 
 .card .word {
