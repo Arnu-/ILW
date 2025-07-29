@@ -55,7 +55,11 @@ let gameState = {
     remainingCards: 0,
     startTime: null,
     timeSpent: 0,
-    timerInterval: null
+    timerInterval: null,
+    keyboardVisible: false,
+    hintWord: null,
+    currentHintIndex: 0,
+    userInput: ''
 };
 
 // DOM 元素
@@ -83,6 +87,9 @@ const viewLeaderboardButton = document.getElementById('view-leaderboard-btn');
 const leaderboardElement = document.getElementById('leaderboard');
 const leaderboardBody = document.getElementById('leaderboard-body');
 const closeLeaderboardButton = document.getElementById('close-leaderboard-btn');
+const helpButton = document.getElementById('help-btn');
+const keyboardContainer = document.getElementById('keyboard-container');
+const hintWordElement = document.getElementById('hint-word');
 
 // DOM 元素 - 游戏模式选择
 const modeSelectionContainer = document.getElementById('mode-selection');
@@ -146,6 +153,10 @@ function initGame() {
     gameState.activeCards = [];
     gameState.gameStarted = false;
     gameState.timeSpent = 0;
+    gameState.keyboardVisible = false;
+    gameState.hintWord = null;
+    gameState.currentHintIndex = 0;
+    gameState.userInput = '';
     
     // 停止计时器
     stopTimer();
@@ -157,9 +168,13 @@ function initGame() {
     messageElement.textContent = '';
     messageElement.className = 'message';
     
-    // 隐藏通关界面和排行榜
+    // 隐藏通关界面、排行榜和键盘映射
     levelCompleteElement.classList.add('hidden');
     leaderboardElement.classList.add('hidden');
+    keyboardContainer.classList.add('hidden');
+    
+    // 清除键盘高亮
+    clearKeyHighlight();
     
     // 启用输入框和开始按钮
     wordInput.disabled = false;
@@ -324,6 +339,15 @@ function checkInput() {
         gameState.remainingCards--;
         remainingElement.textContent = gameState.remainingCards;
         
+        // 重置键盘提示状态
+        gameState.currentHintIndex = 0;
+        gameState.userInput = '';
+        
+        // 如果键盘映射区域可见，更新提示
+        if (gameState.keyboardVisible && gameState.activeCards.length > 0) {
+            setTimeout(updateKeyboardHint, 500);
+        }
+        
         // 检查是否通关
         if (gameState.remainingCards === 0) {
             setTimeout(levelComplete, 1000);
@@ -365,6 +389,10 @@ function levelComplete() {
     
     // 禁用输入
     wordInput.disabled = true;
+    
+    // 隐藏键盘映射区域
+    keyboardContainer.classList.add('hidden');
+    gameState.keyboardVisible = false;
     
     // 保存分数并获取排行榜数据
     saveScore().then(() => {
@@ -578,6 +606,159 @@ function switchUser() {
     usernameInput.focus();
 }
 
+// 显示/隐藏键盘映射
+function toggleKeyboard() {
+    if (!gameState.gameStarted) {
+        showMessage('请先开始游戏', 'incorrect');
+        return;
+    }
+    
+    gameState.keyboardVisible = !gameState.keyboardVisible;
+    
+    if (gameState.keyboardVisible) {
+        keyboardContainer.classList.remove('hidden');
+        updateKeyboardHint();
+    } else {
+        keyboardContainer.classList.add('hidden');
+        // 清除高亮
+        clearKeyHighlight();
+    }
+}
+
+// 更新键盘提示
+function updateKeyboardHint() {
+    if (!gameState.gameStarted || gameState.activeCards.length === 0) {
+        hintWordElement.textContent = '无可用提示';
+        return;
+    }
+    
+    // 随机选择一个活动卡片
+    const randomIndex = Math.floor(Math.random() * gameState.activeCards.length);
+    const randomCard = gameState.activeCards[randomIndex];
+    
+    // 保存提示单词
+    gameState.hintWord = randomCard.word;
+    gameState.currentHintIndex = 0;
+    gameState.userInput = '';
+    
+    // 显示提示单词
+    if (config.gameMode === 'english') {
+        hintWordElement.textContent = randomCard.word;
+    } else {
+        // 在中文模式下，显示中文和英文
+        const chineseText = randomCard.element.querySelector('.word').textContent;
+        hintWordElement.textContent = `${chineseText} (${randomCard.word})`;
+    }
+    
+    // 高亮键盘上的第一个字母
+    highlightNextKey();
+}
+
+// 高亮下一个需要输入的字母
+function highlightNextKey() {
+    // 先清除所有高亮
+    clearKeyHighlight();
+    
+    // 如果已经完成了单词的输入，不再高亮
+    if (!gameState.hintWord || gameState.currentHintIndex >= gameState.hintWord.length) {
+        return;
+    }
+    
+    // 获取当前需要输入的字母
+    const nextLetter = gameState.hintWord.toLowerCase()[gameState.currentHintIndex];
+    
+    // 高亮对应的键
+    const keyElement = document.querySelector(`.key[data-key="${nextLetter}"]`);
+    if (keyElement) {
+        keyElement.classList.add('highlight');
+    }
+}
+
+// 清除键盘高亮
+function clearKeyHighlight() {
+    const highlightedKeys = document.querySelectorAll('.key.highlight, .key.error');
+    highlightedKeys.forEach(key => {
+        key.classList.remove('highlight');
+        key.classList.remove('error');
+    });
+}
+
+// 处理用户输入的字母
+function handleKeyInput(key) {
+    if (!gameState.hintWord || !gameState.keyboardVisible) return;
+    
+    const lowerKey = key.toLowerCase();
+    const keyElement = document.querySelector(`.key[data-key="${lowerKey}"]`);
+    
+    if (!keyElement) return;
+    
+    // 获取当前应该输入的字母
+    const expectedLetter = gameState.hintWord.toLowerCase()[gameState.currentHintIndex];
+    
+    // 检查输入是否正确
+    if (lowerKey === expectedLetter) {
+        // 正确输入
+        keyElement.classList.add('pressed');
+        setTimeout(() => {
+            keyElement.classList.remove('pressed');
+        }, 200);
+        
+        // 更新用户输入
+        gameState.userInput += lowerKey;
+        gameState.currentHintIndex++;
+        
+        // 检查是否完成了单词输入
+        if (gameState.currentHintIndex >= gameState.hintWord.length) {
+            // 单词输入完成，检查是否匹配
+            if (gameState.userInput.toLowerCase() === gameState.hintWord.toLowerCase()) {
+                // 输入正确，自动提交
+                wordInput.value = gameState.hintWord;
+                checkInput();
+                
+                // 重置状态
+                gameState.userInput = '';
+                gameState.currentHintIndex = 0;
+                
+                // 如果还有卡片，更新提示
+                if (gameState.activeCards.length > 0) {
+                    setTimeout(updateKeyboardHint, 1000);
+                }
+            }
+        } else {
+            // 继续高亮下一个字母
+            highlightNextKey();
+        }
+    } else {
+        // 错误输入
+        keyElement.classList.add('error');
+        keyElement.classList.add('pressed');
+        
+        setTimeout(() => {
+            keyElement.classList.remove('pressed');
+            keyElement.classList.remove('error');
+            // 恢复当前需要输入的字母的高亮
+            highlightNextKey();
+        }, 500);
+    }
+}
+
+// 模拟键盘按键动画
+function simulateKeyPress(key) {
+    if (gameState.keyboardVisible) {
+        // 如果键盘可见，处理输入
+        handleKeyInput(key);
+    } else {
+        // 否则只显示按键动画
+        const keyElement = document.querySelector(`.key[data-key="${key.toLowerCase()}"]`);
+        if (keyElement) {
+            keyElement.classList.add('pressed');
+            setTimeout(() => {
+                keyElement.classList.remove('pressed');
+            }, 200);
+        }
+    }
+}
+
 // 事件监听
 loginButton.addEventListener('click', loginUser);
 startButton.addEventListener('click', startGame);
@@ -589,6 +770,7 @@ closeLeaderboardButton.addEventListener('click', () => {
 });
 switchUserButton.addEventListener('click', switchUser);
 showLeaderboardButton.addEventListener('click', showLeaderboard);
+helpButton.addEventListener('click', toggleKeyboard);
 
 // 游戏模式选择事件
 englishModeButton.addEventListener('click', () => {
@@ -623,6 +805,24 @@ usernameInput.addEventListener('keypress', (e) => {
 wordInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter' && gameState.gameStarted) {
         checkInput();
+    } else if (gameState.gameStarted) {
+        // 模拟键盘按键动画
+        simulateKeyPress(e.key);
+    }
+});
+
+// 监听键盘输入，实时更新输入框内容时也模拟按键动画
+wordInput.addEventListener('input', (e) => {
+    if (gameState.gameStarted && e.data && e.data.length === 1) {
+        simulateKeyPress(e.data);
+    }
+});
+
+// 监听键盘按下事件，用于直接响应键盘输入
+document.addEventListener('keydown', (e) => {
+    if (gameState.gameStarted && gameState.keyboardVisible && e.key.length === 1 && /^[a-zA-Z]$/.test(e.key)) {
+        // 如果是字母键，处理输入
+        handleKeyInput(e.key);
     }
 });
 
