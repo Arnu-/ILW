@@ -352,6 +352,79 @@ def get_top_scores():
     
     return jsonify(scores)
 
+@app.route('/api/scores/level/<int:level>/top', methods=['GET'])
+def get_level_top_scores(level):
+    limit = request.args.get('limit', 10, type=int)
+    
+    conn = sqlite3.connect('words.db')
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT s.id, s.score, s.level, s.created_at, u.username 
+        FROM scores s
+        JOIN users u ON s.user_id = u.id
+        WHERE s.level = ?
+        ORDER BY s.score DESC
+        LIMIT ?
+    """, (level, limit))
+    
+    scores = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    
+    return jsonify(scores)
+
+@app.route('/api/scores/level/<int:level>/user/<int:user_id>/rank', methods=['GET'])
+def get_user_rank_in_level(level, user_id):
+    conn = sqlite3.connect('words.db')
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    
+    # 获取用户在该关卡的最高分数
+    cursor.execute("""
+        SELECT MAX(score) as score
+        FROM scores
+        WHERE user_id = ? AND level = ?
+    """, (user_id, level))
+    
+    user_score_row = cursor.fetchone()
+    user_score = user_score_row['score'] if user_score_row and user_score_row['score'] is not None else 0
+    
+    # 获取用户排名
+    cursor.execute("""
+        SELECT COUNT(*) + 1 as rank
+        FROM (
+            SELECT user_id, MAX(score) as max_score
+            FROM scores
+            WHERE level = ?
+            GROUP BY user_id
+        )
+        WHERE max_score > ?
+    """, (level, user_score))
+    
+    rank_row = cursor.fetchone()
+    rank = rank_row['rank'] if rank_row else 1
+    
+    # 获取总参与人数
+    cursor.execute("""
+        SELECT COUNT(DISTINCT user_id) as total
+        FROM scores
+        WHERE level = ?
+    """, (level,))
+    
+    total_row = cursor.fetchone()
+    total = total_row['total'] if total_row else 0
+    
+    conn.close()
+    
+    return jsonify({
+        "user_id": user_id,
+        "level": level,
+        "score": user_score,
+        "rank": rank,
+        "total": total
+    })
+
 @app.route('/api/users/<int:user_id>/scores', methods=['GET'])
 def get_user_scores(user_id):
     conn = sqlite3.connect('words.db')

@@ -15,6 +15,7 @@
                 <div class="remaining">剩余卡片: <span id="remaining">0</span></div>
                 <div class="user-info">用户: <span id="current-user">未登录</span> <button id="switch-user-btn" class="small-btn">切换用户</button></div>
                 <div class="admin-link"><a href="admin.html">单词管理</a></div>
+                <div class="leaderboard-link"><button id="show-leaderboard-btn" class="small-btn">排行榜</button></div>
             </div>
         </header>
         
@@ -51,8 +52,25 @@
             <div class="level-complete hidden" id="level-complete">
                 <h2>恭喜通关！</h2>
                 <p>你的得分: <span id="final-score">0</span></p>
-                <button id="next-level-btn">下一关</button>
-                <button id="view-leaderboard-btn">查看排行榜</button>
+                
+                <div class="level-top-scores">
+                    <h3>当前关卡前三名</h3>
+                    <div id="level-top-three">
+                        <div class="loading">加载中...</div>
+                    </div>
+                </div>
+                
+                <div class="user-rank">
+                    <h3>你的排名</h3>
+                    <div id="user-rank-info">
+                        <div class="loading">加载中...</div>
+                    </div>
+                </div>
+                
+                <div class="level-complete-buttons">
+                    <button id="next-level-btn">下一关</button>
+                    <button id="view-leaderboard-btn">查看排行榜</button>
+                </div>
             </div>
         </div>
         

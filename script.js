@@ -62,6 +62,9 @@ const usernameInput = document.getElementById('username-input');
 const loginButton = document.getElementById('login-btn');
 const currentUserElement = document.getElementById('current-user');
 const switchUserButton = document.getElementById('switch-user-btn');
+const showLeaderboardButton = document.getElementById('show-leaderboard-btn');
+const levelTopThreeElement = document.getElementById('level-top-three');
+const userRankInfoElement = document.getElementById('user-rank-info');
 const wordInput = document.getElementById('word-input');
 const cardsContainer = document.getElementById('cards-container');
 const scoreElement = document.getElementById('score');
@@ -310,13 +313,88 @@ function levelComplete() {
     // 禁用输入
     wordInput.disabled = true;
     
-    // 保存分数
-    saveScore();
+    // 保存分数并获取排行榜数据
+    saveScore().then(() => {
+        // 获取当前关卡前三名
+        getLevelTopThree();
+        
+        // 获取用户在当前关卡的排名
+        getUserRankInLevel();
+    });
+}
+
+// 获取当前关卡前三名
+async function getLevelTopThree() {
+    if (!currentUser.id) return;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/scores/level/${config.currentLevel}/top?limit=3`);
+        
+        if (!response.ok) {
+            throw new Error('获取排行榜失败');
+        }
+        
+        const scores = await response.json();
+        
+        // 清空前三名容器
+        levelTopThreeElement.innerHTML = '';
+        
+        if (scores.length === 0) {
+            levelTopThreeElement.innerHTML = '<div class="no-data">暂无数据</div>';
+            return;
+        }
+        
+        // 添加前三名数据
+        scores.forEach((score, index) => {
+            const scoreItem = document.createElement('div');
+            scoreItem.className = 'top-score-item';
+            
+            scoreItem.innerHTML = `
+                <span class="top-score-rank">${index + 1}</span>
+                <span class="top-score-username">${score.username}</span>
+                <span class="top-score-score">${score.score}分</span>
+            `;
+            
+            levelTopThreeElement.appendChild(scoreItem);
+        });
+        
+    } catch (error) {
+        console.error('获取排行榜错误:', error);
+        levelTopThreeElement.innerHTML = '<div class="error">获取数据失败</div>';
+    }
+}
+
+// 获取用户在当前关卡的排名
+async function getUserRankInLevel() {
+    if (!currentUser.id) return;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/scores/level/${config.currentLevel}/user/${currentUser.id}/rank`);
+        
+        if (!response.ok) {
+            throw new Error('获取用户排名失败');
+        }
+        
+        const rankData = await response.json();
+        
+        // 显示用户排名信息
+        userRankInfoElement.innerHTML = `
+            <div class="user-rank-info">
+                排名: <span class="user-rank-position">${rankData.rank}</span> / 
+                <span class="user-rank-total">${rankData.total}</span>
+                (得分: <span class="user-rank-score">${rankData.score}</span>)
+            </div>
+        `;
+        
+    } catch (error) {
+        console.error('获取用户排名错误:', error);
+        userRankInfoElement.innerHTML = '<div class="error">获取排名失败</div>';
+    }
 }
 
 // 保存分数
 async function saveScore() {
-    if (!currentUser.id) return;
+    if (!currentUser.id) return Promise.resolve();
     
     try {
         const response = await fetch(`${API_BASE_URL}/scores`, {
@@ -336,9 +414,12 @@ async function saveScore() {
             throw new Error(errorData.error || '保存分数失败');
         }
         
+        return Promise.resolve();
+        
     } catch (error) {
         console.error('保存分数错误:', error);
         showMessage('保存分数失败', 'incorrect');
+        return Promise.reject(error);
     }
 }
 
@@ -439,6 +520,7 @@ closeLeaderboardButton.addEventListener('click', () => {
     gameContainer.classList.remove('hidden');
 });
 switchUserButton.addEventListener('click', switchUser);
+showLeaderboardButton.addEventListener('click', showLeaderboard);
 
 // 游戏模式选择事件
 englishModeButton.addEventListener('click', () => {
