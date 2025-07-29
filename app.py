@@ -39,6 +39,7 @@ def init_db():
         user_id INTEGER NOT NULL,
         score INTEGER NOT NULL,
         level INTEGER NOT NULL,
+        time_spent INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users (id)
     )
@@ -313,6 +314,7 @@ def save_score():
     user_id = data.get('user_id')
     score = data.get('score')
     level = data.get('level', 1)
+    time_spent = data.get('time_spent', 0)
     
     if not user_id or score is None:
         return jsonify({"error": "用户ID和分数不能为空"}), 400
@@ -321,12 +323,12 @@ def save_score():
     cursor = conn.cursor()
     
     try:
-        cursor.execute("INSERT INTO scores (user_id, score, level) VALUES (?, ?, ?)", 
-                      (user_id, score, level))
+        cursor.execute("INSERT INTO scores (user_id, score, level, time_spent) VALUES (?, ?, ?, ?)", 
+                      (user_id, score, level, time_spent))
         conn.commit()
         score_id = cursor.lastrowid
         conn.close()
-        return jsonify({"id": score_id, "user_id": user_id, "score": score, "level": level}), 201
+        return jsonify({"id": score_id, "user_id": user_id, "score": score, "level": level, "time_spent": time_spent}), 201
     except Exception as e:
         conn.close()
         return jsonify({"error": f"保存分数失败: {str(e)}"}), 500
@@ -340,7 +342,7 @@ def get_top_scores():
     cursor = conn.cursor()
     
     cursor.execute("""
-        SELECT s.id, s.score, s.level, s.created_at, u.username 
+        SELECT s.id, s.score, s.level, s.time_spent, s.created_at, u.username 
         FROM scores s
         JOIN users u ON s.user_id = u.id
         ORDER BY s.score DESC
@@ -361,7 +363,7 @@ def get_level_top_scores(level):
     cursor = conn.cursor()
     
     cursor.execute("""
-        SELECT s.id, s.score, s.level, s.created_at, u.username 
+        SELECT s.id, s.score, s.level, s.time_spent, s.created_at, u.username 
         FROM scores s
         JOIN users u ON s.user_id = u.id
         WHERE s.level = ?
@@ -380,27 +382,34 @@ def get_user_rank_in_level(level, user_id):
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
-    # 获取用户在该关卡的最高分数
+    # 获取用户在该关卡的最高分数和对应的耗时
     cursor.execute("""
-        SELECT MAX(score) as score
+        SELECT score, time_spent
         FROM scores
         WHERE user_id = ? AND level = ?
+        ORDER BY score DESC, time_spent ASC
+        LIMIT 1
     """, (user_id, level))
     
     user_score_row = cursor.fetchone()
-    user_score = user_score_row['score'] if user_score_row and user_score_row['score'] is not None else 0
+    user_score = user_score_row['score'] if user_score_row else 0
+    user_time = user_score_row['time_spent'] if user_score_row else 0
     
-    # 获取用户排名
+    # 获取用户排名 - 先按分数排序，分数相同时按耗时排序
     cursor.execute("""
         SELECT COUNT(*) + 1 as rank
         FROM (
-            SELECT user_id, MAX(score) as max_score
-            FROM scores
+            SELECT user_id, MAX(score) as max_score, MIN(
+                CASE WHEN score = (
+                    SELECT MAX(score) FROM scores WHERE user_id = s.user_id AND level = ?
+                ) THEN time_spent ELSE 999999 END
+            ) as min_time
+            FROM scores s
             WHERE level = ?
             GROUP BY user_id
         )
-        WHERE max_score > ?
-    """, (level, user_score))
+        WHERE max_score > ? OR (max_score = ? AND min_time < ?)
+    """, (level, level, user_score, user_score, user_time))
     
     rank_row = cursor.fetchone()
     rank = rank_row['rank'] if rank_row else 1
@@ -421,6 +430,7 @@ def get_user_rank_in_level(level, user_id):
         "user_id": user_id,
         "level": level,
         "score": user_score,
+        "time_spent": user_time,
         "rank": rank,
         "total": total
     })
@@ -432,7 +442,7 @@ def get_user_scores(user_id):
     cursor = conn.cursor()
     
     cursor.execute("""
-        SELECT s.id, s.score, s.level, s.created_at, u.username 
+        SELECT s.id, s.score, s.level, s.time_spent, s.created_at, u.username 
         FROM scores s
         JOIN users u ON s.user_id = u.id
         WHERE s.user_id = ?

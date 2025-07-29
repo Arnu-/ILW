@@ -13,6 +13,7 @@
             <div class="stats">
                 <div class="score">得分: <span id="score">0</span></div>
                 <div class="remaining">剩余卡片: <span id="remaining">0</span></div>
+                <div class="timer">耗时: <span id="timer">00:00</span></div>
                 <div class="user-info">用户: <span id="current-user">未登录</span> <button id="switch-user-btn" class="small-btn">切换用户</button></div>
                 <div class="admin-link"><a href="admin.html">单词管理</a></div>
                 <div class="leaderboard-link"><button id="show-leaderboard-btn" class="small-btn">排行榜</button></div>
@@ -52,6 +53,7 @@
             <div class="level-complete hidden" id="level-complete">
                 <h2>恭喜通关！</h2>
                 <p>你的得分: <span id="final-score">0</span></p>
+                <p>游戏耗时: <span id="final-time">00:00</span></p>
                 
                 <div class="level-top-scores">
                     <h3>当前关卡前三名</h3>
@@ -83,6 +85,7 @@
                         <th>排名</th>
                         <th>用户名</th>
                         <th>分数</th>
+                        <th>耗时</th>
                         <th>关卡</th>
                         <th>日期</th>
                     </tr>

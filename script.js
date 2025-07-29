@@ -52,7 +52,10 @@ let gameState = {
     score: 0,
     activeCards: [],
     gameStarted: false,
-    remainingCards: 0
+    remainingCards: 0,
+    startTime: null,
+    timeSpent: 0,
+    timerInterval: null
 };
 
 // DOM 元素
@@ -69,10 +72,12 @@ const wordInput = document.getElementById('word-input');
 const cardsContainer = document.getElementById('cards-container');
 const scoreElement = document.getElementById('score');
 const remainingElement = document.getElementById('remaining');
+const timerElement = document.getElementById('timer');
 const messageElement = document.getElementById('message');
 const startButton = document.getElementById('start-btn');
 const levelCompleteElement = document.getElementById('level-complete');
 const finalScoreElement = document.getElementById('final-score');
+const finalTimeElement = document.getElementById('final-time');
 const nextLevelButton = document.getElementById('next-level-btn');
 const viewLeaderboardButton = document.getElementById('view-leaderboard-btn');
 const leaderboardElement = document.getElementById('leaderboard');
@@ -84,6 +89,42 @@ const modeSelectionContainer = document.getElementById('mode-selection');
 const englishModeButton = document.getElementById('english-mode-btn');
 const chineseModeButton = document.getElementById('chinese-mode-btn');
 const changeModeButton = document.getElementById('change-mode-btn');
+
+// 格式化时间为 MM:SS 格式
+function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
+
+// 开始计时器
+function startTimer() {
+    // 清除之前的计时器
+    if (gameState.timerInterval) {
+        clearInterval(gameState.timerInterval);
+    }
+    
+    // 设置开始时间
+    gameState.startTime = Date.now();
+    gameState.timeSpent = 0;
+    
+    // 更新UI
+    timerElement.textContent = formatTime(gameState.timeSpent);
+    
+    // 启动计时器
+    gameState.timerInterval = setInterval(() => {
+        gameState.timeSpent = Math.floor((Date.now() - gameState.startTime) / 1000);
+        timerElement.textContent = formatTime(gameState.timeSpent);
+    }, 1000);
+}
+
+// 停止计时器
+function stopTimer() {
+    if (gameState.timerInterval) {
+        clearInterval(gameState.timerInterval);
+        gameState.timerInterval = null;
+    }
+}
 
 // 初始化游戏
 function initGame() {
@@ -104,9 +145,14 @@ function initGame() {
     gameState.score = 0;
     gameState.activeCards = [];
     gameState.gameStarted = false;
+    gameState.timeSpent = 0;
+    
+    // 停止计时器
+    stopTimer();
     
     // 更新UI
     scoreElement.textContent = gameState.score;
+    timerElement.textContent = formatTime(gameState.timeSpent);
     cardsContainer.innerHTML = '';
     messageElement.textContent = '';
     messageElement.className = 'message';
@@ -184,6 +230,9 @@ function startGame() {
     gameState.gameStarted = true;
     wordInput.focus();
     startButton.disabled = true;
+    
+    // 启动计时器
+    startTimer();
     
     // 根据当前关卡生成卡片数量
     const cardsCount = config.cardsPerLevel + (config.currentLevel - 1) * 2;
@@ -306,9 +355,13 @@ function showMessage(text, type) {
 
 // 通关
 function levelComplete() {
+    // 停止计时器
+    stopTimer();
+    
     // 显示通关界面
     levelCompleteElement.classList.remove('hidden');
     finalScoreElement.textContent = gameState.score;
+    finalTimeElement.textContent = formatTime(gameState.timeSpent);
     
     // 禁用输入
     wordInput.disabled = true;
@@ -349,10 +402,13 @@ async function getLevelTopThree() {
             const scoreItem = document.createElement('div');
             scoreItem.className = 'top-score-item';
             
+            // 格式化耗时
+            const formattedTime = formatTime(score.time_spent || 0);
+            
             scoreItem.innerHTML = `
                 <span class="top-score-rank">${index + 1}</span>
                 <span class="top-score-username">${score.username}</span>
-                <span class="top-score-score">${score.score}分</span>
+                <span class="top-score-score">${score.score}分 (${formattedTime})</span>
             `;
             
             levelTopThreeElement.appendChild(scoreItem);
@@ -377,12 +433,16 @@ async function getUserRankInLevel() {
         
         const rankData = await response.json();
         
+        // 格式化耗时
+        const formattedTime = formatTime(rankData.time_spent || 0);
+        
         // 显示用户排名信息
         userRankInfoElement.innerHTML = `
             <div class="user-rank-info">
                 排名: <span class="user-rank-position">${rankData.rank}</span> / 
                 <span class="user-rank-total">${rankData.total}</span>
-                (得分: <span class="user-rank-score">${rankData.score}</span>)
+                (得分: <span class="user-rank-score">${rankData.score}</span>, 
+                耗时: <span class="user-rank-time">${formattedTime}</span>)
             </div>
         `;
         
@@ -405,7 +465,8 @@ async function saveScore() {
             body: JSON.stringify({
                 user_id: currentUser.id,
                 score: gameState.score,
-                level: config.currentLevel
+                level: config.currentLevel,
+                time_spent: gameState.timeSpent
             })
         });
         
@@ -458,10 +519,14 @@ async function showLeaderboard() {
             const date = new Date(score.created_at);
             const formattedDate = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
             
+            // 格式化耗时
+            const formattedTime = formatTime(score.time_spent || 0);
+            
             row.innerHTML = `
                 <td>${index + 1}</td>
                 <td>${score.username}</td>
                 <td>${score.score}</td>
+                <td>${formattedTime}</td>
                 <td>${score.level}</td>
                 <td>${formattedDate}</td>
             `;
