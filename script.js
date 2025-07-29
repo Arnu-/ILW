@@ -570,6 +570,9 @@ function switchUser() {
     gameState.gameStarted = false;
     scoreElement.textContent = gameState.score;
     
+    // 重置关卡信息
+    config.currentLevel = 1;
+    
     // 清空输入框
     usernameInput.value = '';
     usernameInput.focus();
