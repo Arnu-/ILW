@@ -12,9 +12,48 @@ body {
 }
 
 .container {
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
+}
+
+/* 游戏布局 */
+.game-layout {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+/* 左侧统计面板 */
+.stats-panel {
+    width: 200px;
+    background-color: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    font-size: 1.1rem;
+    font-weight: bold;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    height: fit-content;
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+    .game-layout {
+        flex-direction: column;
+    }
+    
+    .stats-panel {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+}
+
+/* 右侧主要内容区域 */
+.main-content {
+    flex: 1;
 }
 
 header {
@@ -27,20 +66,30 @@ h1 {
     margin-bottom: 15px;
 }
 
-.stats {
-    display: flex;
-    justify-content: space-around;
-    flex-wrap: wrap;
-    font-size: 1.2rem;
-    font-weight: bold;
-    margin-bottom: 20px;
-}
-
-.user-info {
+/* 左侧面板中的元素样式 */
+.stats-panel .user-info {
     color: #3498db;
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
     gap: 10px;
+}
+
+.stats-panel .timer {
+    color: #e67e22;
+}
+
+.stats-panel .score {
+    color: #27ae60;
+}
+
+.stats-panel .remaining {
+    color: #8e44ad;
+}
+
+.stats-panel .leaderboard-link,
+.stats-panel .admin-link {
+    margin-top: 5px;
 }
 
 .small-btn {
@@ -52,6 +101,7 @@ h1 {
     border-radius: 5px;
     cursor: pointer;
     transition: background-color 0.3s;
+    width: 100%;
 }
 
 .small-btn:hover {
@@ -65,6 +115,8 @@ h1 {
     border: 1px solid #3498db;
     border-radius: 5px;
     transition: all 0.3s ease;
+    display: block;
+    text-align: center;
 }
 
 .admin-link a:hover {
@@ -161,6 +213,7 @@ h1 {
 /* 游戏区域 */
 .game-container {
     margin-top: 20px;
+    width: 100%;
 }
 
 .game-area {
@@ -168,8 +221,25 @@ h1 {
 }
 
 .input-area {
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.game-timer {
+    color: #e67e22;
+    font-weight: bold;
+    font-size: 1.2rem;
+    padding: 10px 15px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    border: 2px solid #e67e22;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #word-input {
@@ -198,7 +268,7 @@ button:hover {
 
 .cards-container {
     position: relative;
-    height: 500px;
+    height: 450px;  /* 减小高度 */
     border: 2px solid #ddd;
     border-radius: 10px;
     background-color: #fff;
@@ -394,30 +464,33 @@ button:hover {
 
 /* 键盘映射区域 */
 .keyboard-container {
-    margin-top: 20px;
-    background-color: #f8f9fa;
+    position: relative;
+    margin-top: -50px;  /* 负边距使其与游戏框重叠 */
+    background-color: rgba(248, 249, 250, 0.95);  /* 半透明背景 */
     border-radius: 10px;
     padding: 20px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     text-align: center;
+    z-index: 10;  /* 确保键盘在游戏框上方 */
+    border-top: 3px solid #e67e22;  /* 橙色边框，与帮助按钮颜色一致 */
 }
 
 .keyboard {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 15px;
+    gap: 8px;  /* 减小间距 */
+    margin-bottom: 10px;  /* 减小底部边距 */
 }
 
 .keyboard-row {
     display: flex;
-    gap: 5px;
+    gap: 4px;  /* 减小键之间的间距 */
 }
 
 .key {
-    width: 40px;
-    height: 40px;
+    width: 35px;  /* 减小键的尺寸 */
+    height: 35px;
     background-color: #fff;
     border: 1px solid #ddd;
     border-radius: 5px;
@@ -425,6 +498,7 @@ button:hover {
     justify-content: center;
     align-items: center;
     font-weight: bold;
+    font-size: 0.9rem;  /* 减小字体大小 */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     transition: all 0.2s ease;
 }
@@ -444,10 +518,14 @@ button:hover {
 }
 
 .hint-text {
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: bold;
     color: #2c3e50;
-    margin-top: 10px;
+    margin-top: 5px;
+    padding: 5px;
+    background-color: rgba(255, 255, 255, 0.7);
+    border-radius: 5px;
+    display: inline-block;
 }
 
 .hidden {
@@ -455,8 +533,47 @@ button:hover {
 }
 
 .card.destroyed {
-    transform: scale(0);
-    opacity: 0;
+    display: none;
+    position: relative;
+}
+
+.card.destroyed::before,
+.card.destroyed::after {
+    content: '';
+    position: absolute;
+    background-color: inherit;
+    width: 40%;
+    height: 40%;
+    border-radius: 8px;
+    opacity: 0.7;
+    z-index: -1;
+    animation: fragment 0.6s forwards;
+}
+
+.card.destroyed::before {
+    top: 10%;
+    left: -20%;
+    transform: rotate(-30deg);
+}
+
+.card.destroyed::after {
+    bottom: 10%;
+    right: -20%;
+    transform: rotate(30deg);
+}
+
+@keyframes fragment {
+    0% {
+        transform: translate(0, 0) rotate(0);
+        opacity: 0.7;
+    }
+    50% {
+        opacity: 0.4;
+    }
+    100% {
+        transform: translate(-50px, -50px) rotate(-90deg);
+        opacity: 0;
+    }
 }
 
 @keyframes float {
@@ -491,3 +608,11 @@ button:hover {
 .key.pressed {
     animation: keyPress 0.2s ease;
 }
+
+/* 卡片碎片样式 */
+.card-fragment {
+    position: fixed;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+}
+

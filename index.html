@@ -8,17 +8,22 @@
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>单词打字记忆游戏</h1>
-            <div class="stats">
+        <div class="game-layout">
+            <!-- 左侧统计面板 -->
+            <div class="stats-panel">
+                <div class="user-info">用户: <span id="current-user">未登录</span> <button id="switch-user-btn" class="small-btn">切换用户</button></div>
+                <div class="timer">耗时: <span id="timer">00:00</span></div>
                 <div class="score">得分: <span id="score">0</span></div>
                 <div class="remaining">剩余卡片: <span id="remaining">0</span></div>
-                <div class="timer">耗时: <span id="timer">00:00</span></div>
-                <div class="user-info">用户: <span id="current-user">未登录</span> <button id="switch-user-btn" class="small-btn">切换用户</button></div>
-                <div class="admin-link"><a href="admin.html">单词管理</a></div>
                 <div class="leaderboard-link"><button id="show-leaderboard-btn" class="small-btn">排行榜</button></div>
+                <div class="admin-link"><a href="admin.html">单词管理</a></div>
             </div>
-        </header>
+            
+            <!-- 右侧游戏区域 -->
+            <div class="main-content">
+                <header>
+                    <h1>单词打字记忆游戏</h1>
+                </header>
         
         <!-- 用户登录界面 -->
         <div id="login-container" class="login-container">
@@ -41,6 +46,7 @@
         <div id="game-container" class="game-container hidden">
             <div class="game-area">
                 <div class="input-area">
+                    <div class="game-timer">耗时: <span id="game-timer">00:00</span></div>
                     <input type="text" id="word-input" placeholder="在此输入单词..." autocomplete="off">
                     <button id="start-btn">开始游戏</button>
                     <button id="change-mode-btn">更换模式</button>
@@ -135,6 +141,8 @@
                 </tbody>
             </table>
             <button id="close-leaderboard-btn">返回游戏</button>
+                </div>
+            </div>
         </div>
     </div>
     

@@ -77,6 +77,7 @@ const cardsContainer = document.getElementById('cards-container');
 const scoreElement = document.getElementById('score');
 const remainingElement = document.getElementById('remaining');
 const timerElement = document.getElementById('timer');
+const gameTimerElement = document.getElementById('game-timer');
 const messageElement = document.getElementById('message');
 const startButton = document.getElementById('start-btn');
 const levelCompleteElement = document.getElementById('level-complete');
@@ -115,13 +116,16 @@ function startTimer() {
     gameState.startTime = Date.now();
     gameState.timeSpent = 0;
     
-    // 更新UI
+    // 更新UI - 同时更新两个计时器显示
     timerElement.textContent = formatTime(gameState.timeSpent);
+    gameTimerElement.textContent = formatTime(gameState.timeSpent);
     
     // 启动计时器
     gameState.timerInterval = setInterval(() => {
         gameState.timeSpent = Math.floor((Date.now() - gameState.startTime) / 1000);
+        // 同时更新两个计时器显示
         timerElement.textContent = formatTime(gameState.timeSpent);
+        gameTimerElement.textContent = formatTime(gameState.timeSpent);
     }, 1000);
 }
 
@@ -164,6 +168,7 @@ function initGame() {
     // 更新UI
     scoreElement.textContent = gameState.score;
     timerElement.textContent = formatTime(gameState.timeSpent);
+    gameTimerElement.textContent = formatTime(gameState.timeSpent);
     cardsContainer.innerHTML = '';
     messageElement.textContent = '';
     messageElement.className = 'message';
@@ -329,8 +334,15 @@ function checkInput() {
         gameState.score += 10;
         scoreElement.textContent = gameState.score;
         
-        // 销毁卡片动画
-        matchedCard.element.classList.add('destroyed');
+        // 获取卡片位置和尺寸（在隐藏前）
+        const cardElement = matchedCard.element;
+        const rect = cardElement.getBoundingClientRect();
+        
+        // 创建碎片效果
+        createCardShatterEffect(cardElement, rect);
+        
+        // 立即隐藏卡片
+        cardElement.classList.add('destroyed');
         
         // 从活动卡片中移除
         gameState.activeCards.splice(matchIndex, 1);
@@ -618,6 +630,12 @@ function toggleKeyboard() {
     if (gameState.keyboardVisible) {
         keyboardContainer.classList.remove('hidden');
         updateKeyboardHint();
+        
+        // 确保键盘映射区域可见
+        setTimeout(() => {
+            // 平滑滚动到键盘映射区域
+            keyboardContainer.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 100);
     } else {
         keyboardContainer.classList.add('hidden');
         // 清除高亮
@@ -671,6 +689,63 @@ function highlightNextKey() {
     const keyElement = document.querySelector(`.key[data-key="${nextLetter}"]`);
     if (keyElement) {
         keyElement.classList.add('highlight');
+    }
+}
+
+// 创建卡片碎裂效果
+function createCardShatterEffect(cardElement, rect) {
+    // 计算中心点
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    // 创建多个碎片
+    const fragmentsCount = 12; // 增加碎片数量
+    
+    for (let i = 0; i < fragmentsCount; i++) {
+        const fragment = document.createElement('div');
+        fragment.className = 'card-fragment';
+        
+        // 设置碎片样式
+        fragment.style.position = 'fixed';
+        fragment.style.width = `${rect.width * 0.3}px`;
+        fragment.style.height = `${rect.height * 0.3}px`;
+        fragment.style.backgroundColor = getComputedStyle(cardElement).backgroundColor;
+        fragment.style.borderRadius = '5px';
+        fragment.style.left = `${centerX - rect.width * 0.15}px`;
+        fragment.style.top = `${centerY - rect.height * 0.15}px`;
+        fragment.style.zIndex = '5';
+        
+        // 随机旋转角度
+        const rotation = Math.random() * 360;
+        fragment.style.transform = `rotate(${rotation}deg)`;
+        
+        // 添加到文档
+        document.body.appendChild(fragment);
+        
+        // 设置动画
+        const angle = (i / fragmentsCount) * 2 * Math.PI;
+        const distance = 100 + Math.random() * 50;
+        const destinationX = centerX + Math.cos(angle) * distance;
+        const destinationY = centerY + Math.sin(angle) * distance;
+        
+        // 使用动画
+        fragment.animate([
+            { 
+                transform: `translate(0, 0) rotate(${rotation}deg)`,
+                opacity: 0.8
+            },
+            { 
+                transform: `translate(${destinationX - centerX}px, ${destinationY - centerY}px) rotate(${rotation + 360}deg)`,
+                opacity: 0
+            }
+        ], {
+            duration: 300,
+            easing: 'ease-out',
+            fill: 'forwards'
+        }).onfinish = () => {
+            // 动画结束后移除碎片
+            document.body.removeChild(fragment);
+        };
     }
 }
 
