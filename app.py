@@ -179,12 +179,19 @@ def import_words():
         return jsonify({"error": "没有选择文件"}), 400
     
     try:
-        # 读取Excel文件
-        df = pd.read_excel(file)
+        # 根据文件扩展名判断文件类型
+        file_extension = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+        
+        if file_extension == 'csv':
+            # 读取CSV文件
+            df = pd.read_csv(file, encoding='utf-8')
+        else:
+            # 读取Excel文件
+            df = pd.read_excel(file)
         
         # 确保文件有正确的列
         if len(df.columns) < 2:
-            return jsonify({"error": "Excel文件格式不正确，需要至少两列"}), 400
+            return jsonify({"error": "文件格式不正确，需要至少两列"}), 400
         
         # 使用前两列作为单词和翻译
         df = df.iloc[:, :2]
@@ -239,20 +246,37 @@ def export_words():
     # 创建DataFrame
     df = pd.DataFrame(words)
     
-    # 创建Excel文件
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, sheet_name='单词列表', index=False)
+    # 获取请求的格式参数
+    export_format = request.args.get('format', 'excel')
     
-    output.seek(0)
-    
-    return app.response_class(
-        output.getvalue(),
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        headers={
-            'Content-Disposition': 'attachment; filename=单词列表.xlsx'
-        }
-    )
+    if export_format == 'csv':
+        # 创建CSV文件
+        output = BytesIO()
+        df.to_csv(output, index=False, encoding='utf-8-sig')  # 使用带BOM的UTF-8编码以支持中文
+        output.seek(0)
+        
+        return app.response_class(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={
+                'Content-Disposition': 'attachment; filename=单词列表.csv'
+            }
+        )
+    else:
+        # 创建Excel文件
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, sheet_name='单词列表', index=False)
+        
+        output.seek(0)
+        
+        return app.response_class(
+            output.getvalue(),
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers={
+                'Content-Disposition': 'attachment; filename=单词列表.xlsx'
+            }
+        )
 
 @app.route('/api/words/template', methods=['GET'])
 def get_template():
@@ -266,20 +290,37 @@ def get_template():
     # 创建DataFrame
     df = pd.DataFrame(template_data)
     
-    # 创建Excel文件
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, sheet_name='单词模板', index=False)
+    # 获取请求的格式参数
+    template_format = request.args.get('format', 'excel')
     
-    output.seek(0)
-    
-    return app.response_class(
-        output.getvalue(),
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        headers={
-            'Content-Disposition': 'attachment; filename=单词导入模板.xlsx'
-        }
-    )
+    if template_format == 'csv':
+        # 创建CSV文件
+        output = BytesIO()
+        df.to_csv(output, index=False, encoding='utf-8-sig')  # 使用带BOM的UTF-8编码以支持中文
+        output.seek(0)
+        
+        return app.response_class(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={
+                'Content-Disposition': 'attachment; filename=单词导入模板.csv'
+            }
+        )
+    else:
+        # 创建Excel文件
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, sheet_name='单词模板', index=False)
+        
+        output.seek(0)
+        
+        return app.response_class(
+            output.getvalue(),
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers={
+                'Content-Disposition': 'attachment; filename=单词导入模板.xlsx'
+            }
+        )
 
 # 用户相关API
 @app.route('/api/users', methods=['POST'])

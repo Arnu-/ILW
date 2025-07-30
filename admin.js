@@ -293,14 +293,21 @@ async function handleDelete(e) {
     }
 }
 
-// 处理Excel导入
+// 处理文件导入
 async function handleImport() {
     if (!excelFileInput.files.length) {
-        alert('请选择Excel文件');
+        alert('请选择文件');
         return;
     }
     
     const file = excelFileInput.files[0];
+    const fileExtension = file.name.split('.').pop().toLowerCase();
+    
+    // 检查文件类型
+    if (!['xlsx', 'xls', 'csv'].includes(fileExtension)) {
+        alert('请选择有效的Excel文件(.xlsx, .xls)或CSV文件(.csv)');
+        return;
+    }
     
     try {
         // 创建FormData对象
@@ -341,23 +348,39 @@ async function handleImport() {
     }
 }
 
-// 处理Excel导出
+// 处理文件导出
 function handleExport() {
     if (wordsList.length === 0) {
         alert('没有单词数据可导出');
         return;
     }
     
-    // 直接使用API下载Excel文件
-    window.location.href = `${API_BASE_URL}/words/export`;
+    // 创建导出格式选择对话框
+    const format = confirm('选择导出格式:\n确定 - Excel格式\n取消 - CSV格式');
+    
+    if (format) {
+        // 导出Excel文件
+        window.location.href = `${API_BASE_URL}/words/export?format=excel`;
+    } else {
+        // 导出CSV文件
+        window.location.href = `${API_BASE_URL}/words/export?format=csv`;
+    }
 }
 
-// 下载Excel模板
+// 下载模板
 function downloadTemplate(e) {
     e.preventDefault();
     
-    // 直接使用API下载模板
-    window.location.href = `${API_BASE_URL}/words/template`;
+    // 创建模板格式选择对话框
+    const format = confirm('选择模板格式:\n确定 - Excel格式\n取消 - CSV格式');
+    
+    if (format) {
+        // 下载Excel模板
+        window.location.href = `${API_BASE_URL}/words/template?format=excel`;
+    } else {
+        // 下载CSV模板
+        window.location.href = `${API_BASE_URL}/words/template?format=csv`;
+    }
 }
 
 // 显示通知消息
