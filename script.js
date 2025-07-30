@@ -571,8 +571,19 @@ function checkInput() {
         showMessage(`错误！"${inputValue}" 不在卡片中`, 'incorrect');
         
         // 扣分
-        gameState.score = Math.max(0, gameState.score - 5);
+        const penalty = 5; // 错误扣5分
+        gameState.score = Math.max(0, gameState.score - penalty);
         scoreElement.textContent = gameState.score;
+        
+        // 添加错误闪烁效果
+        const cardsContainerElement = document.getElementById('cards-container');
+        cardsContainerElement.classList.add('error-flash');
+        setTimeout(() => {
+            cardsContainerElement.classList.remove('error-flash');
+        }, 500);
+        
+        // 显示扣分效果
+        showPenaltyDisplay(penalty);
     }
     
     // 清空输入框
@@ -903,6 +914,45 @@ function createCardShatterEffect(cardElement, rect) {
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
     
+    // 获取卡片难度和对应分数
+    const cardIndex = gameState.activeCards.findIndex(card => card.element === cardElement);
+    const difficulty = cardIndex !== -1 ? gameState.activeCards[cardIndex].difficulty : 1;
+    const points = getScoreByDifficulty(difficulty);
+    
+    // 创建分数显示元素
+    const scoreDisplay = document.createElement('div');
+    scoreDisplay.className = 'score-display';
+    scoreDisplay.textContent = `+${points}`;
+    scoreDisplay.style.position = 'fixed';
+    scoreDisplay.style.left = `${centerX}px`;
+    scoreDisplay.style.top = `${centerY}px`;
+    scoreDisplay.style.transform = 'translate(-50%, -50%)';
+    scoreDisplay.style.color = '#fff';
+    scoreDisplay.style.fontSize = '24px';
+    scoreDisplay.style.fontWeight = 'bold';
+    scoreDisplay.style.textShadow = '0 0 5px rgba(0,0,0,0.7)';
+    scoreDisplay.style.zIndex = '10';
+    scoreDisplay.style.pointerEvents = 'none';
+    document.body.appendChild(scoreDisplay);
+    
+    // 分数显示动画
+    scoreDisplay.animate([
+        { 
+            transform: 'translate(-50%, -50%) scale(1)',
+            opacity: 1
+        },
+        { 
+            transform: 'translate(-50%, -100%) scale(1.5)',
+            opacity: 0
+        }
+    ], {
+        duration: 800,
+        easing: 'ease-out',
+        fill: 'forwards'
+    }).onfinish = () => {
+        document.body.removeChild(scoreDisplay);
+    };
+    
     // 创建多个碎片
     const fragmentsCount = 12; // 增加碎片数量
     
@@ -1146,6 +1196,42 @@ function stopOverlapDetection() {
         clearInterval(gameState.overlapDetectionInterval);
         gameState.overlapDetectionInterval = null;
     }
+}
+
+// 显示扣分效果
+function showPenaltyDisplay(penalty) {
+    // 获取游戏区域的中心位置
+    const gameArea = document.getElementById('cards-container');
+    const rect = gameArea.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    // 创建扣分显示元素
+    const penaltyDisplay = document.createElement('div');
+    penaltyDisplay.className = 'penalty-display';
+    penaltyDisplay.textContent = `-${penalty}`;
+    penaltyDisplay.style.left = `${centerX}px`;
+    penaltyDisplay.style.top = `${centerY}px`;
+    penaltyDisplay.style.transform = 'translate(-50%, -50%)';
+    document.body.appendChild(penaltyDisplay);
+    
+    // 扣分显示动画
+    penaltyDisplay.animate([
+        { 
+            transform: 'translate(-50%, -50%) scale(1)',
+            opacity: 1
+        },
+        { 
+            transform: 'translate(-50%, -100%) scale(1.5)',
+            opacity: 0
+        }
+    ], {
+        duration: 800,
+        easing: 'ease-out',
+        fill: 'forwards'
+    }).onfinish = () => {
+        document.body.removeChild(penaltyDisplay);
+    };
 }
 
 // 初始化
