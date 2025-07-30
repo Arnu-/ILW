@@ -484,12 +484,14 @@ async function playWordSound(word) {
     
     try {
         // 创建音频元素
-        const audio = new Audio(`${API_BASE_URL}/tts?text=${encodeURIComponent(word)}`);
+        const audio = new Audio(`${API_BASE_URL}/word-audio?word=${encodeURIComponent(word)}`);
         
         // 播放音频
         await audio.play();
     } catch (error) {
         console.error('播放单词发音失败:', error);
+        // 如果播放失败，显示提示
+        showMessage(`无法播放"${word}"的发音`, 'incorrect');
     }
 }
 
