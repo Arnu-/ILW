@@ -62,7 +62,9 @@ let gameState = {
     hintWord: null,
     currentHintIndex: 0,
     userInput: '',
-    overlapDetectionInterval: null
+    overlapDetectionInterval: null,
+    isPaused: false,
+    pauseStartTime: null
 };
 
 // DOM 元素
@@ -83,6 +85,10 @@ const timerElement = document.getElementById('timer');
 const gameTimerElement = document.getElementById('game-timer');
 const messageElement = document.getElementById('message');
 const soundButton = document.getElementById('sound-btn');
+const pauseOverlay = document.getElementById('pause-overlay');
+const resumeButton = document.getElementById('resume-btn');
+const restartButton = document.getElementById('restart-btn');
+const endGameButton = document.getElementById('end-game-btn');
 const startButton = document.getElementById('start-btn');
 const levelCompleteElement = document.getElementById('level-complete');
 const finalScoreElement = document.getElementById('final-score');
@@ -165,6 +171,8 @@ function initGame() {
     gameState.hintWord = null;
     gameState.currentHintIndex = 0;
     gameState.userInput = '';
+    gameState.isPaused = false;
+    gameState.pauseStartTime = null;
     
     // 停止计时器
     stopTimer();
@@ -180,10 +188,11 @@ function initGame() {
     messageElement.textContent = '';
     messageElement.className = 'message';
     
-    // 隐藏通关界面、排行榜和键盘映射
+    // 隐藏通关界面、排行榜、键盘映射和暂停覆盖层
     levelCompleteElement.classList.add('hidden');
     leaderboardElement.classList.add('hidden');
     keyboardContainer.classList.add('hidden');
+    pauseOverlay.classList.add('hidden');
     
     // 清除键盘高亮
     clearKeyHighlight();
@@ -191,6 +200,7 @@ function initGame() {
     // 启用输入框和开始按钮
     wordInput.disabled = false;
     startButton.disabled = false;
+    startButton.textContent = "开始游戏";
 }
 
 // 选择游戏模式后显示游戏界面
@@ -198,12 +208,42 @@ function showGameInterface() {
     modeSelectionContainer.classList.add('hidden');
     gameContainer.classList.remove('hidden');
     
+    // 确保暂停覆盖层是隐藏的
+    pauseOverlay.classList.add('hidden');
+    
+    // 确保游戏状态正确
+    gameState.isPaused = false;
+    gameState.gameStarted = false;
+    
+    // 重置开始按钮
+    startButton.textContent = "开始游戏";
+    startButton.disabled = false;
+    
+    // 启用输入框
+    wordInput.disabled = false;
+    
     // 根据游戏模式更新输入框提示
     if (config.gameMode === 'english') {
         wordInput.placeholder = "在此输入英文单词...";
     } else {
         wordInput.placeholder = "看到中文，在此输入对应的英文...";
     }
+    
+    // 清空卡片容器
+    cardsContainer.innerHTML = '';
+    gameState.activeCards = [];
+    
+    // 重置分数
+    gameState.score = 0;
+    scoreElement.textContent = gameState.score;
+    
+    // 停止计时器
+    stopTimer();
+    
+    // 重置计时器显示
+    gameState.timeSpent = 0;
+    timerElement.textContent = formatTime(gameState.timeSpent);
+    gameTimerElement.textContent = formatTime(gameState.timeSpent);
 }
 
 // 用户登录
@@ -252,11 +292,22 @@ async function loginUser() {
 
 // 开始游戏
 function startGame() {
-    if (gameState.gameStarted) return;
+    // 如果游戏已经开始，则暂停游戏
+    if (gameState.gameStarted) {
+        pauseGame();
+        return;
+    }
+    
+    // 确保暂停覆盖层是隐藏的
+    pauseOverlay.classList.add('hidden');
     
     gameState.gameStarted = true;
+    gameState.isPaused = false;
     wordInput.focus();
-    startButton.disabled = true;
+    wordInput.disabled = false;
+    
+    // 将开始按钮改为暂停按钮
+    startButton.textContent = "暂停游戏";
     
     // 启动计时器
     startTimer();
@@ -282,6 +333,141 @@ function startGame() {
     setTimeout(() => {
         startOverlapDetection();
     }, cardsCount * 100 + 500); // 等待所有卡片创建完成后再启动
+}
+
+// 暂停游戏
+function pauseGame() {
+    // 如果游戏没有开始或已经暂停，则不执行暂停操作
+    if (!gameState.gameStarted || gameState.isPaused) return;
+    
+    // 设置暂停状态
+    gameState.isPaused = true;
+    
+    // 记录暂停开始时间
+    gameState.pauseStartTime = Date.now();
+    
+    // 停止计时器
+    stopTimer();
+    
+    // 禁用输入框
+    wordInput.disabled = true;
+    
+    // 显示暂停覆盖层
+    pauseOverlay.classList.remove('hidden');
+}
+
+// 继续游戏
+function resumeGame() {
+    if (!gameState.isPaused) return;
+    
+    // 取消暂停状态
+    gameState.isPaused = false;
+    
+    // 隐藏暂停覆盖层
+    pauseOverlay.classList.add('hidden');
+    
+    // 启用输入框
+    wordInput.disabled = false;
+    wordInput.focus();
+    
+    // 调整计时器的开始时间，考虑暂停的时间
+    if (gameState.pauseStartTime) {
+        const pauseDuration = Date.now() - gameState.pauseStartTime;
+        gameState.startTime += pauseDuration;
+        gameState.pauseStartTime = null;
+    }
+    
+    // 重新启动计时器，但不重置时间
+    if (gameState.timerInterval) {
+        clearInterval(gameState.timerInterval);
+    }
+    
+    // 启动计时器，保持现有的timeSpent值
+    gameState.timerInterval = setInterval(() => {
+        gameState.timeSpent = Math.floor((Date.now() - gameState.startTime) / 1000);
+        // 同时更新两个计时器显示
+        timerElement.textContent = formatTime(gameState.timeSpent);
+        gameTimerElement.textContent = formatTime(gameState.timeSpent);
+    }, 1000);
+}
+
+// 重新开始游戏
+function restartGame() {
+    // 隐藏暂停覆盖层
+    pauseOverlay.classList.add('hidden');
+    
+    // 重置游戏状态
+    gameState.isPaused = false;
+    gameState.gameStarted = false;
+    gameState.pauseStartTime = null;
+    
+    // 清空卡片容器
+    cardsContainer.innerHTML = '';
+    gameState.activeCards = [];
+    
+    // 重置分数
+    gameState.score = 0;
+    scoreElement.textContent = gameState.score;
+    
+    // 重置开始按钮
+    startButton.textContent = "开始游戏";
+    startButton.disabled = false;
+    
+    // 启用输入框
+    wordInput.disabled = false;
+    wordInput.value = '';
+    
+    // 停止计时器
+    stopTimer();
+    
+    // 停止重叠检测
+    stopOverlapDetection();
+    
+    // 重置计时器显示
+    gameState.timeSpent = 0;
+    timerElement.textContent = formatTime(gameState.timeSpent);
+    gameTimerElement.textContent = formatTime(gameState.timeSpent);
+    
+    // 开始新游戏
+    startGame();
+}
+
+// 结束游戏
+function endGame() {
+    // 隐藏暂停覆盖层
+    pauseOverlay.classList.add('hidden');
+    
+    // 重置游戏状态
+    gameState.isPaused = false;
+    gameState.gameStarted = false;
+    
+    // 清空卡片容器
+    cardsContainer.innerHTML = '';
+    gameState.activeCards = [];
+    
+    // 重置分数
+    gameState.score = 0;
+    scoreElement.textContent = gameState.score;
+    
+    // 重置开始按钮
+    startButton.textContent = "开始游戏";
+    startButton.disabled = false;
+    
+    // 启用输入框
+    wordInput.disabled = false;
+    wordInput.value = '';
+    
+    // 停止计时器
+    stopTimer();
+    
+    // 重置计时器显示
+    gameState.timeSpent = 0;
+    timerElement.textContent = formatTime(gameState.timeSpent);
+    gameTimerElement.textContent = formatTime(gameState.timeSpent);
+    
+    // 返回模式选择界面
+    gameContainer.classList.add('hidden');
+    modeSelectionContainer.classList.remove('hidden');
 }
 
 // 获取单词难度级别
@@ -506,6 +692,9 @@ function toggleSound() {
 
 // 检查输入
 function checkInput() {
+    // 如果游戏暂停中，不处理输入
+    if (gameState.isPaused) return;
+    
     const inputValue = wordInput.value.toLowerCase().trim();
     
     if (!inputValue) return;
@@ -618,9 +807,14 @@ function levelComplete() {
     // 禁用输入
     wordInput.disabled = true;
     
-    // 隐藏键盘映射区域
+    // 隐藏键盘映射区域和暂停覆盖层
     keyboardContainer.classList.add('hidden');
+    pauseOverlay.classList.add('hidden');
     gameState.keyboardVisible = false;
+    gameState.isPaused = false;
+    
+    // 重置开始按钮
+    startButton.textContent = "开始游戏";
     
     // 保存分数并获取排行榜数据
     saveScore().then(() => {
@@ -1107,14 +1301,35 @@ showLeaderboardButton.addEventListener('click', showLeaderboard);
 helpButton.addEventListener('click', toggleKeyboard);
 soundButton.addEventListener('click', toggleSound);
 
+// 暂停相关事件监听
+resumeButton.addEventListener('click', resumeGame);
+restartButton.addEventListener('click', restartGame);
+endGameButton.addEventListener('click', endGame);
+
 // 游戏模式选择事件
 englishModeButton.addEventListener('click', () => {
     config.gameMode = 'english';
+    
+    // 重置游戏状态
+    gameState.isPaused = false;
+    gameState.gameStarted = false;
+    
+    // 确保暂停覆盖层是隐藏的
+    pauseOverlay.classList.add('hidden');
+    
     showGameInterface();
 });
 
 chineseModeButton.addEventListener('click', () => {
     config.gameMode = 'chinese';
+    
+    // 重置游戏状态
+    gameState.isPaused = false;
+    gameState.gameStarted = false;
+    
+    // 确保暂停覆盖层是隐藏的
+    pauseOverlay.classList.add('hidden');
+    
     showGameInterface();
 });
 
@@ -1245,6 +1460,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         config.soundEnabled = savedSoundEnabled === 'true';
         soundButton.textContent = `发音: ${config.soundEnabled ? '开' : '关'}`;
     }
+    
+    // 默认隐藏游戏界面
+    pauseOverlay.classList.add('hidden');
+    
+    // 重置游戏状态
+    gameState.isPaused = false;
+    gameState.gameStarted = false;
     
     // 检查本地存储中是否有用户信息
     const savedUser = localStorage.getItem('currentUser');

@@ -5,3 +5,4 @@ words.db
 .env
 
 **/__pycache__
+doc/
