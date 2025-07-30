@@ -1,10 +1,20 @@
-from flask import Flask, request, jsonify, send_from_directory, render_template
+from flask import Flask, request, jsonify, send_from_directory, render_template, Response
 from flask_cors import CORS
 import sqlite3
 import os
 import json
 import pandas as pd
 from io import BytesIO
+import base64
+from dotenv import load_dotenv
+from tencentcloud.common import credential
+from tencentcloud.common.profile.client_profile import ClientProfile
+from tencentcloud.common.profile.http_profile import HttpProfile
+from tencentcloud.common.exception.tencent_cloud_sdk_exception import TencentCloudSDKException
+from tencentcloud.tts.v20190823 import tts_client, models
+
+# 加载环境变量
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)  # 启用跨域请求支持
@@ -494,6 +504,76 @@ def get_user_scores(user_id):
     conn.close()
     
     return jsonify(scores)
+
+# 腾讯云TTS API
+@app.route('/api/tts', methods=['GET'])
+def text_to_speech():
+    try:
+        # 获取要转换的文本
+        text = request.args.get('text', '')
+        if not text:
+            return jsonify({"error": "文本不能为空"}), 400
+        
+        # 从环境变量获取腾讯云API密钥配置
+        secret_id = os.environ.get("TENCENT_SECRET_ID")
+        secret_key = os.environ.get("TENCENT_SECRET_KEY")
+        
+        # 检查密钥是否存在
+        if not secret_id or not secret_key:
+            return jsonify({"error": "腾讯云API密钥未配置，请检查.env文件"}), 500
+        
+        # 实例化一个认证对象
+        cred = credential.Credential(secret_id, secret_key)
+        
+        # 实例化一个http选项，可选的，没有特殊需求可以跳过
+        httpProfile = HttpProfile()
+        httpProfile.endpoint = "tts.tencentcloudapi.com"
+        
+        # 实例化一个client选项
+        clientProfile = ClientProfile()
+        clientProfile.httpProfile = httpProfile
+        
+        # 实例化要请求产品的client对象
+        client = tts_client.TtsClient(cred, "ap-guangzhou", clientProfile)
+        
+        # 实例化一个请求对象
+        req = models.TextToVoiceRequest()
+        
+        # 英文发音参数设置
+        params = {
+            "Text": text,
+            "SessionId": "session-" + text,
+            "Volume": 5,
+            "Speed": 0,
+            "ProjectId": 0,
+            "ModelType": 1,
+            "VoiceType": 1002,  # 1002为英文女声
+            "PrimaryLanguage": 1,  # 1为英文
+            "SampleRate": 16000,
+            "Codec": "mp3"
+        }
+        
+        req.from_json_string(json.dumps(params))
+        
+        # 返回的resp是一个TextToVoiceResponse的实例
+        resp = client.TextToVoice(req)
+        
+        # 将Base64编码的音频数据解码
+        audio_data = base64.b64decode(resp.Audio)
+        
+        # 返回音频数据
+        return Response(
+            audio_data,
+            mimetype="audio/mp3",
+            headers={"Content-Disposition": f"attachment;filename={text}.mp3"}
+        )
+        
+    except TencentCloudSDKException as err:
+        print(err)
+        return jsonify({"error": str(err)}), 500
+    except Exception as e:
+        print(e)
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     print("服务已启动，请访问 http://localhost:5001/ 开始游戏")

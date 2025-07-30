@@ -471,9 +471,9 @@ button:hover {
 }
 
 /* 帮助按钮 */
-.help-btn {
-    background-color: #e67e22;
-    margin-left: 10px;
+.help-btn, .sound-btn {
+    background-color: #6c757d;
+    color: white;
 }
 
 .help-btn:hover {

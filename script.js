@@ -45,7 +45,8 @@ const config = {
     currentLevel: 1,
     maxLevels: 4,
     gameMode: 'english', // 默认模式：显示英文，输入英文 ('english' 或 'chinese')
-    cardSpacing: 20 // 卡片之间的最小间距
+    cardSpacing: 20, // 卡片之间的最小间距
+    soundEnabled: true // 是否启用单词发音
 };
 
 // 游戏状态
@@ -81,6 +82,7 @@ const remainingElement = document.getElementById('remaining');
 const timerElement = document.getElementById('timer');
 const gameTimerElement = document.getElementById('game-timer');
 const messageElement = document.getElementById('message');
+const soundButton = document.getElementById('sound-btn');
 const startButton = document.getElementById('start-btn');
 const levelCompleteElement = document.getElementById('level-complete');
 const finalScoreElement = document.getElementById('final-score');
@@ -475,6 +477,31 @@ function calculateNewPosition(card, otherCard) {
     return { left: newLeft, top: newTop };
 }
 
+// 播放单词发音
+async function playWordSound(word) {
+    // 如果声音被禁用，则不播放
+    if (!config.soundEnabled) return;
+    
+    try {
+        // 创建音频元素
+        const audio = new Audio(`${API_BASE_URL}/tts?text=${encodeURIComponent(word)}`);
+        
+        // 播放音频
+        await audio.play();
+    } catch (error) {
+        console.error('播放单词发音失败:', error);
+    }
+}
+
+// 切换声音开关
+function toggleSound() {
+    config.soundEnabled = !config.soundEnabled;
+    soundButton.textContent = `发音: ${config.soundEnabled ? '开' : '关'}`;
+    
+    // 保存设置到本地存储
+    localStorage.setItem('soundEnabled', config.soundEnabled);
+}
+
 // 检查输入
 function checkInput() {
     const inputValue = wordInput.value.toLowerCase().trim();
@@ -493,6 +520,9 @@ function checkInput() {
         const points = getScoreByDifficulty(difficulty);
         gameState.score += points;
         scoreElement.textContent = gameState.score;
+        
+        // 播放单词发音
+        playWordSound(inputValue);
         
         // 显示正确消息，包含难度和得分信息
         const difficultyNames = ["", "初级", "中级", "高级", "专家"];
@@ -955,23 +985,27 @@ function handleKeyInput(key) {
         gameState.userInput += lowerKey;
         gameState.currentHintIndex++;
         
-        // 检查是否完成了单词输入
-        if (gameState.currentHintIndex >= gameState.hintWord.length) {
-            // 单词输入完成，检查是否匹配
-            if (gameState.userInput.toLowerCase() === gameState.hintWord.toLowerCase()) {
-                // 输入正确，自动提交
-                wordInput.value = gameState.hintWord;
-                checkInput();
-                
-                // 重置状态
-                gameState.userInput = '';
-                gameState.currentHintIndex = 0;
-                
-                // 如果还有卡片，更新提示
-                if (gameState.activeCards.length > 0) {
-                    setTimeout(updateKeyboardHint, 1000);
+            // 检查是否完成了单词输入
+            if (gameState.currentHintIndex >= gameState.hintWord.length) {
+                // 单词输入完成，检查是否匹配
+                if (gameState.userInput.toLowerCase() === gameState.hintWord.toLowerCase()) {
+                    // 输入正确，自动提交
+                    wordInput.value = gameState.hintWord;
+                    
+                    // 播放单词发音
+                    playWordSound(gameState.hintWord);
+                    
+                    checkInput();
+                    
+                    // 重置状态
+                    gameState.userInput = '';
+                    gameState.currentHintIndex = 0;
+                    
+                    // 如果还有卡片，更新提示
+                    if (gameState.activeCards.length > 0) {
+                        setTimeout(updateKeyboardHint, 1000);
+                    }
                 }
-            }
         } else {
             // 继续高亮下一个字母
             highlightNextKey();
@@ -1019,6 +1053,7 @@ closeLeaderboardButton.addEventListener('click', () => {
 switchUserButton.addEventListener('click', switchUser);
 showLeaderboardButton.addEventListener('click', showLeaderboard);
 helpButton.addEventListener('click', toggleKeyboard);
+soundButton.addEventListener('click', toggleSound);
 
 // 游戏模式选择事件
 englishModeButton.addEventListener('click', () => {
@@ -1115,6 +1150,13 @@ function stopOverlapDetection() {
 document.addEventListener('DOMContentLoaded', async function() {
     // 先获取单词列表
     await fetchWords();
+    
+    // 加载声音设置
+    const savedSoundEnabled = localStorage.getItem('soundEnabled');
+    if (savedSoundEnabled !== null) {
+        config.soundEnabled = savedSoundEnabled === 'true';
+        soundButton.textContent = `发音: ${config.soundEnabled ? '开' : '关'}`;
+    }
     
     // 检查本地存储中是否有用户信息
     const savedUser = localStorage.getItem('currentUser');
