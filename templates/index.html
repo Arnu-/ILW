@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词记忆游戏</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- 登录界面 -->
+    <div id="login-screen" class="screen">
+        <div class="container">
+            <h1>单词记忆游戏</h1>
+            <div class="login-form">
+                <input type="text" id="username" placeholder="请输入用户名" autofocus>
+                <button id="login-btn">开始游戏</button>
+            </div>
+            <div class="admin-link">
+                <a href="/admin">管理员入口</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主界面 -->
+    <div id="main-screen" class="screen hidden">
+        <header>
+            <div class="logo">单词记忆游戏</div>
+            <div class="user-info">
+                <span id="current-user"></span>
+                <button id="logout-btn">退出</button>
+            </div>
+        </header>
+        
+        <div class="container">
+            <!-- 单词组选择界面 -->
+            <div id="group-selection" class="section">
+                <h2>选择单词组</h2>
+                <div id="groups-container" class="groups-grid">
+                    <!-- 单词组将通过JavaScript动态加载 -->
+                </div>
+            </div>
+            
+            <!-- 学习阶段选择界面 -->
+            <div id="stage-selection" class="section hidden">
+                <div class="back-btn" id="back-to-groups">返回单词组</div>
+                <h2>选择学习阶段</h2>
+                <h3 id="current-group-name"></h3>
+                
+                <div class="stages-container">
+                    <div class="stage-card" data-stage="1">
+                        <h3>认知阶段</h3>
+                        <p>查看单词和翻译，标记"已记住"或"再看一遍"</p>
+                        <div class="stage-status">
+                            <span class="status-label">状态:</span>
+                            <span class="status-value" id="stage-1-status">未开始</span>
+                        </div>
+                        <button class="start-stage-btn" data-stage="1">开始学习</button>
+                    </div>
+                    
+                    <div class="stage-card" data-stage="2">
+                        <h3>英文抄写阶段</h3>
+                        <p>看到英文单词，需要正确输入英文</p>
+                        <div class="stage-status">
+                            <span class="status-label">状态:</span>
+                            <span class="status-value" id="stage-2-status">未解锁</span>
+                        </div>
+                        <button class="start-stage-btn" data-stage="2" disabled>开始学习</button>
+                    </div>
+                    
+                    <div class="stage-card" data-stage="3">
+                        <h3>中文默写阶段</h3>
+                        <p>看到中文释义，需要输入对应的英文单词</p>
+                        <div class="stage-status">
+                            <span class="status-label">状态:</span>
+                            <span class="status-value" id="stage-3-status">未解锁</span>
+                        </div>
+                        <button class="start-stage-btn" data-stage="3" disabled>开始学习</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 学习界面 -->
+            <div id="learning-section" class="section hidden">
+                <div class="back-btn" id="back-to-stages">返回学习阶段</div>
+                
+                <div class="learning-header">
+                    <h2 id="learning-title">学习中</h2>
+                    <div class="learning-progress">
+                        <span id="current-word-index">1</span>/<span id="total-words">10</span>
+                    </div>
+                    <div class="learning-timer">
+                        时间: <span id="timer">00:00</span>
+                    </div>
+                </div>
+                
+                <!-- 认知阶段界面 -->
+                <div id="recognition-mode" class="learning-mode">
+                    <div class="word-card">
+                        <div class="word-text" id="recognition-word"></div>
+                        <div class="word-translation" id="recognition-translation"></div>
+                        <div class="word-audio">
+                            <button id="play-audio-btn">发音</button>
+                        </div>
+                    </div>
+                    
+                    <div class="learning-actions">
+                        <button id="known-btn" class="action-btn">已记住</button>
+                        <button id="unknown-btn" class="action-btn">再看一遍</button>
+                    </div>
+                </div>
+                
+                <!-- 英文抄写阶段界面 -->
+                <div id="typing-mode" class="learning-mode hidden">
+                    <div class="word-card">
+                        <div class="word-text" id="typing-word"></div>
+                        <div class="word-audio">
+                            <button id="typing-play-audio-btn">发音</button>
+                        </div>
+                    </div>
+                    
+                    <div class="input-area">
+                        <input type="text" id="typing-input" placeholder="请输入单词" autocomplete="off">
+                        <div class="virtual-keyboard" id="typing-keyboard"></div>
+                    </div>
+                    
+                    <div class="learning-actions">
+                        <button id="typing-submit-btn" class="action-btn">提交</button>
+                        <button id="typing-skip-btn" class="action-btn">跳过</button>
+                    </div>
+                </div>
+                
+                <!-- 中文默写阶段界面 -->
+                <div id="recall-mode" class="learning-mode hidden">
+                    <div class="word-card">
+                        <div class="word-translation" id="recall-translation"></div>
+                    </div>
+                    
+                    <div class="input-area">
+                        <input type="text" id="recall-input" placeholder="请输入对应的英文单词" autocomplete="off">
+                        <div class="virtual-keyboard" id="recall-keyboard"></div>
+                    </div>
+                    
+                    <div class="learning-actions">
+                        <button id="recall-submit-btn" class="action-btn">提交</button>
+                        <button id="recall-skip-btn" class="action-btn">跳过</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 学习结果界面 -->
+            <div id="result-section" class="section hidden">
+                <h2>学习结果</h2>
+                
+                <div class="result-summary">
+                    <div class="result-item">
+                        <div class="result-label">正确率:</div>
+                        <div class="result-value" id="result-accuracy">0%</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">用时:</div>
+                        <div class="result-value" id="result-time">00:00</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">状态:</div>
+                        <div class="result-value" id="result-status">未通过</div>
+                    </div>
+                </div>
+                
+                <div class="result-details">
+                    <h3>单词详情</h3>
+                    <div id="result-words-list" class="result-words-list">
+                        <!-- 单词结果将通过JavaScript动态加载 -->
+                    </div>
+                </div>
+                
+                <div class="result-actions">
+                    <button id="retry-btn">重新学习</button>
+                    <button id="next-stage-btn" class="hidden">进入下一阶段</button>
+                    <button id="next-group-btn" class="hidden">进入下一组</button>
+                </div>
+            </div>
+            
+            <!-- 最终挑战界面 -->
+            <div id="final-challenge-section" class="section hidden">
+                <h2>最终挑战</h2>
+                <p>挑战所有学过的单词，测试你的记忆力！</p>
+                
+                <div class="challenge-info">
+                    <div class="challenge-item">
+                        <div class="challenge-label">单词总数:</div>
+                        <div class="challenge-value" id="challenge-total-words">0</div>
+                    </div>
+                    <div class="challenge-item">
+                        <div class="challenge-label">通过要求:</div>
+                        <div class="challenge-value">80%正确率</div>
+                    </div>
+                </div>
+                
+                <button id="start-challenge-btn">开始挑战</button>
+            </div>
+            
+            <!-- 排行榜界面 -->
+            <div id="leaderboard-section" class="section hidden">
+                <h2>排行榜</h2>
+                
+                <div class="leaderboard-filters">
+                    <select id="leaderboard-level">
+                        <option value="">所有关卡</option>
+                        <!-- 关卡选项将通过JavaScript动态加载 -->
+                    </select>
+                </div>
+                
+                <div class="leaderboard-table-container">
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>用户名</th>
+                                <th>分数</th>
+                                <th>用时</th>
+                                <th>日期</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body">
+                            <!-- 排行榜数据将通过JavaScript动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="user-rank">
+                    <div class="user-rank-label">你的排名:</div>
+                    <div class="user-rank-value" id="user-rank">-</div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="#" id="nav-groups" class="active">单词组</a></li>
+                    <li><a href="#" id="nav-challenge">最终挑战</a></li>
+                    <li><a href="#" id="nav-leaderboard">排行榜</a></li>
+                </ul>
+            </nav>
+        </footer>
+    </div>
+
+    <!-- 成就徽章弹窗 -->
+    <div id="badge-popup" class="popup hidden">
+        <div class="popup-content">
+            <h3>获得成就!</h3>
+            <div class="badge-container">
+                <img id="badge-image" src="" alt="成就徽章">
+                <div class="badge-info">
+                    <div id="badge-name"></div>
+                    <div id="badge-description"></div>
+                </div>
+            </div>
+            <button id="badge-close-btn">关闭</button>
+        </div>
+    </div>
+
+    <!-- JavaScript文件 -->
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/script.js"></script>
+    <script src="/static/js/learning.js"></script>
+    <script src="/static/js/challenge.js"></script>
+    <script src="/static/js/leaderboard.js"></script>
+</body>
+</html>

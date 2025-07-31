@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单词记忆游戏 - 管理员</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+    <!-- 管理员登录界面 -->
+    <div id="admin-login-screen" class="screen">
+        <div class="container">
+            <h1>管理员登录</h1>
+            <div class="login-form">
+                <input type="text" id="admin-username" placeholder="请输入管理员用户名" autofocus>
+                <input type="password" id="admin-password" placeholder="请输入管理员密码">
+                <button id="admin-login-btn">登录</button>
+            </div>
+            <div class="back-to-user">
+                <a href="/">返回用户端</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理员主界面 -->
+    <div id="admin-main-screen" class="screen hidden">
+        <div class="admin-sidebar">
+            <h2>单词记忆游戏</h2>
+            <div class="admin-user-info">
+                <span id="admin-current-user"></span>
+                <button id="admin-logout-btn">退出</button>
+            </div>
+            <nav class="admin-nav">
+                <ul>
+                    <li><a href="#" class="nav-link active" data-target="word-management">单词管理</a></li>
+                    <li><a href="#" class="nav-link" data-target="group-management">单词组管理</a></li>
+                    <li><a href="#" class="nav-link" data-target="import-export">导入导出</a></li>
+                    <li><a href="#" class="nav-link" data-target="system-stats">系统统计</a></li>
+                </ul>
+            </nav>
+        </div>
+        
+        <div class="admin-content">
+            <!-- 单词管理 -->
+            <div id="word-management" class="admin-section">
+                <h2>单词管理</h2>
+                
+                <div class="search-bar">
+                    <input type="text" id="word-search" placeholder="搜索单词或翻译">
+                    <select id="difficulty-filter">
+                        <option value="">所有难度</option>
+                        <option value="1">简单</option>
+                        <option value="2">中等</option>
+                        <option value="3">困难</option>
+                        <option value="4">专家</option>
+                    </select>
+                    <button id="add-word-btn">添加单词</button>
+                </div>
+                
+                <div class="table-container">
+                    <table id="words-table" class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>单词</th>
+                                <th>翻译</th>
+                                <th>难度</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 单词数据将通过JavaScript动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="words-pagination" class="pagination">
+                    <!-- 分页按钮将通过JavaScript动态加载 -->
+                </div>
+            </div>
+            
+            <!-- 单词组管理 -->
+            <div id="group-management" class="admin-section hidden">
+                <h2>单词组管理</h2>
+                
+                <div class="search-bar">
+                    <button id="add-group-btn">添加单词组</button>
+                    <button id="initialize-groups-btn">初始化均衡单词组</button>
+                </div>
+                
+                <div class="table-container">
+                    <table id="groups-table" class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>名称</th>
+                                <th>描述</th>
+                                <th>序号</th>
+                                <th>单词数量</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 单词组数据将通过JavaScript动态加载 -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 单词组详情 -->
+                <div id="group-details" class="hidden">
+                    <div class="group-words-header">
+                        <h3>单词组: <span id="group-detail-name"></span></h3>
+                        <button id="add-word-to-group-btn">添加单词到组</button>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table id="group-words-table" class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>单词</th>
+                                    <th>翻译</th>
+                                    <th>难度</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 组内单词数据将通过JavaScript动态加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 导入导出 -->
+            <div id="import-export" class="admin-section hidden">
+                <h2>导入导出</h2>
+                
+                <div class="import-section">
+                    <h3>导入单词</h3>
+                    <p>选择CSV或Excel文件导入单词。文件应包含单词、翻译和难度（可选）列。</p>
+                    
+                    <div class="file-input">
+                        <input type="file" id="import-file" accept=".csv,.xlsx,.xls">
+                        <button id="import-btn">导入</button>
+                    </div>
+                    
+                    <div class="template-download">
+                        <a href="/api/words/template" download="word_import_template.csv">下载导入模板</a>
+                    </div>
+                </div>
+                
+                <div class="export-section">
+                    <h3>导出单词</h3>
+                    <p>导出所有单词为CSV或Excel文件。</p>
+                    
+                    <a href="/api/words/export?format=csv" class="export-btn" download="words.csv">导出为CSV</a>
+                    <a href="/api/words/export?format=excel" class="export-btn" download="words.xlsx">导出为Excel</a>
+                </div>
+            </div>
+            
+            <!-- 系统统计 -->
+            <div id="system-stats" class="admin-section hidden">
+                <h2>系统统计</h2>
+                
+                <div class="stats-cards">
+                    <div class="stat-card">
+                        <h3>单词总数</h3>
+                        <div class="stat-value" id="total-words-count">0</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <h3>单词组总数</h3>
+                        <div class="stat-value" id="total-groups-count">0</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <h3>用户总数</h3>
+                        <div class="stat-value" id="total-users-count">0</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <h3>学习记录总数</h3>
+                        <div class="stat-value" id="total-learning-records">0</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <h3>平均正确率</h3>
+                        <div class="stat-value" id="avg-accuracy">0%</div>
+                    </div>
+                </div>
+                
+                <div class="difficulty-distribution">
+                    <h3>单词难度分布</h3>
+                    <div id="difficulty-distribution-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模态框 -->
+    <div id="modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="modal-title">标题</h2>
+            <div id="modal-body">
+                <!-- 模态框内容将通过JavaScript动态加载 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript文件 -->
+    <script src="/static/js/auth.js"></script>
+    <script src="/static/js/admin.js"></script>
+</body>
+</html>

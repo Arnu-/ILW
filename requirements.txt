@@ -1,6 +1,7 @@
-flask
-flask-cors
-pandas
-xlsxwriter
-tencentcloud-sdk-python
+Flask
+Flask-SQLAlchemy
+Flask-Cors
 python-dotenv
+requests
+pandas
+openpyxl
